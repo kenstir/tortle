@@ -32,7 +32,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.torinfo.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./torinfo.toml)")
 
 	rootCmd.PersistentFlags().StringP("server", "s", "localhost", "server address")
 	rootCmd.PersistentFlags().IntP("port", "p", 9091, "server port")
@@ -46,14 +46,10 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-
-		// Search config in home directory with name ".torinfo" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".torinfo")
+		// Use ./torinfo.toml
+		viper.AddConfigPath(".")
+		viper.SetConfigType("toml")
+		viper.SetConfigName("torinfo")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
