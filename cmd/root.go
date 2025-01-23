@@ -48,8 +48,8 @@ func initConfig() {
 	} else {
 		// Use ./torinfo.toml
 		viper.AddConfigPath(".")
-		viper.SetConfigType("toml")
 		viper.SetConfigName("torinfo")
+		viper.SetConfigType("toml")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
