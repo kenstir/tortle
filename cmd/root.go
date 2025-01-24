@@ -38,6 +38,10 @@ func init() {
 	rootCmd.PersistentFlags().IntP("port", "p", 9091, "server port")
 	rootCmd.PersistentFlags().StringP("username", "U", "admin", "server username")
 	rootCmd.PersistentFlags().StringP("password", "P", "password", "server password")
+	viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
+	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
+	viper.BindPFlag("username", rootCmd.PersistentFlags().Lookup("username"))
+	viper.BindPFlag("password", rootCmd.PersistentFlags().Lookup("password"))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -52,7 +56,8 @@ func initConfig() {
 		viper.SetConfigType("toml")
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
+	// Read in environment variables that match flags
+	//viper.AutomaticEnv()
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
