@@ -17,11 +17,15 @@ var lsCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List torrents",
 	Run: func(cmd *cobra.Command, args []string) {
+		verbosity := viper.GetInt("verbose")
+
 		// debug
-		fmt.Printf("server: %s\n", viper.GetString("server"))
-		fmt.Printf("port: %d\n", viper.GetUint("port"))
-		fmt.Printf("username: %s\n", viper.GetString("username"))
-		fmt.Printf("password: %s\n", viper.GetString("password"))
+		if verbosity > 0 {
+			fmt.Printf("server: %s\n", viper.GetString("server"))
+			fmt.Printf("port: %d\n", viper.GetUint("port"))
+			fmt.Printf("username: %s\n", viper.GetString("username"))
+			fmt.Printf("password: %s\n", viper.GetString("password"))
+		}
 
 		client := deluge.NewV2(deluge.Settings{
 			Hostname: viper.GetString("server"),
@@ -36,7 +40,9 @@ var lsCmd = &cobra.Command{
 			fmt.Printf("Error connecting to deluge: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Connected to deluge\n")
+		if verbosity > 0 {
+			fmt.Printf("Connected to deluge\n")
+		}
 
 		// methods, err := client.MethodsList(context.Background())
 		// if err != nil {
@@ -53,7 +59,9 @@ var lsCmd = &cobra.Command{
 			fmt.Printf("Error getting torrents status: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Found %d torrents\n", len(torrentsStatus))
+		if verbosity > 0 {
+			fmt.Printf("Found %d torrents\n", len(torrentsStatus))
+		}
 		fmt.Printf("name,ratio\n")
 		for _, ts := range torrentsStatus {
 			fmt.Printf("%s,%.1f\n", ts.Name, ts.Ratio)
