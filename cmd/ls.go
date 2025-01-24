@@ -17,21 +17,11 @@ var lsCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List torrents",
 	Run: func(cmd *cobra.Command, args []string) {
-		// parent flags
-		// viper.BindPFlag("server", cmd.Parent().PersistentFlags().Lookup("server"))
-		// viper.BindPFlag("port", cmd.Parent().PersistentFlags().Lookup("port"))
-		// //viper.BindPFlag("username", cmd.Parent().PersistentFlags().Lookup("username"))
-		// viper.BindPFlag("username", cmd.Flags().Lookup("usernamexxx"))
-		// viper.BindPFlag("password", cmd.Parent().PersistentFlags().Lookup("password"))
-
 		// debug
 		fmt.Printf("server: %s\n", viper.GetString("server"))
 		fmt.Printf("port: %d\n", viper.GetUint("port"))
 		fmt.Printf("username: %s\n", viper.GetString("username"))
 		fmt.Printf("password: %s\n", viper.GetString("password"))
-		// if viper.GetUint("port") > 0 {
-		// 	return
-		// }
 
 		client := deluge.NewV2(deluge.Settings{
 			Hostname: viper.GetString("server"),
@@ -47,6 +37,27 @@ var lsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		fmt.Printf("Connected to deluge\n")
+
+		// methods, err := client.MethodsList(context.Background())
+		// if err != nil {
+		// 	fmt.Printf("Error getting methods: %s\n", err)
+		// 	os.Exit(1)
+		// }
+		// for _, method := range methods {
+		// 	fmt.Printf("%s\n", method)
+		// }
+		// fmt.Printf("Found %d methods\n", len(methods))
+
+		torrentsStatus, err := client.TorrentsStatus(context.Background(), deluge.StateUnspecified, nil)
+		if err != nil {
+			fmt.Printf("Error getting torrents status: %s\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Found %d torrents\n", len(torrentsStatus))
+		fmt.Printf("name,ratio\n")
+		for _, ts := range torrentsStatus {
+			fmt.Printf("%s,%.1f\n", ts.Name, ts.Ratio)
+		}
 	},
 }
 
