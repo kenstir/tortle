@@ -13,6 +13,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+func init() {
+	rootCmd.AddCommand(lsCmd)
+
+	lsCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
+	viper.BindPFlag("noheader", lsCmd.Flags().Lookup("noheader"))
+}
+
 var lsCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List torrents",
@@ -62,23 +69,11 @@ var lsCmd = &cobra.Command{
 		if verbosity > 0 {
 			fmt.Printf("Found %d torrents\n", len(torrentsStatus))
 		}
-		fmt.Printf("name,ratio\n")
+		if !viper.GetBool("noheader") {
+			fmt.Printf("ratio,name\n")
+		}
 		for _, ts := range torrentsStatus {
-			fmt.Printf("%s,%.1f\n", ts.Name, ts.Ratio)
+			fmt.Printf("%.1f,%s\n", ts.Ratio, ts.Name)
 		}
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(lsCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// lsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// lsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
