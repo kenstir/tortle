@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	deluge "github.com/autobrr/go-deluge"
 	"github.com/spf13/cobra"
@@ -16,8 +18,10 @@ import (
 func init() {
 	rootCmd.AddCommand(lsCmd)
 
+	lsCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
 	lsCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
 	viper.BindPFlag("noheader", lsCmd.Flags().Lookup("noheader"))
+	viper.BindPFlag("columns", lsCmd.Flags().Lookup("columns"))
 }
 
 var lsCmd = &cobra.Command{
@@ -35,10 +39,10 @@ var lsCmd = &cobra.Command{
 		}
 
 		client := deluge.NewV2(deluge.Settings{
-			Hostname: viper.GetString("server"),
-			Port:     viper.GetUint("port"),
-			Login:    viper.GetString("username"),
-			Password: viper.GetString("password"),
+			Hostname:             viper.GetString("server"),
+			Port:                 viper.GetUint("port"),
+			Login:                viper.GetString("username"),
+			Password:             viper.GetString("password"),
 			DebugServerResponses: true,
 		})
 
@@ -69,11 +73,39 @@ var lsCmd = &cobra.Command{
 		if verbosity > 0 {
 			fmt.Printf("Found %d torrents\n", len(torrentsStatus))
 		}
+		columns := viper.GetStringSlice("columns")
 		if !viper.GetBool("noheader") {
-			fmt.Printf("ratio,name\n")
+			header := strings.Join(columns, ",")
+			fmt.Printf("%s\n", header)
 		}
 		for _, ts := range torrentsStatus {
-			fmt.Printf("%.1f,%s\n", ts.Ratio, ts.Name)
+			// for each column, add the value to a slice
+			// then join the slice with commas
+			// then print the line
+			var line []string
+			for _, column := range columns {
+				switch column {
+				case "added":
+					line = append(line, dateString(ts.TimeAdded))
+				case "name":
+					line = append(line, ts.Name)
+				case "ratio":
+					line = append(line, fmt.Sprintf("%.1f", ts.Ratio))
+				case "state":
+					line = append(line, ts.State)
+				default:
+					fmt.Printf("Unknown column: %s\n", column)
+					os.Exit(1)
+				}
+			}
+			fmt.Printf("%s\n", strings.Join(line, ","))
 		}
 	},
+}
+
+// / convert a unix timestamp to a string
+func dateString(str float32) string {
+	t := time.Unix(int64(str), 0)
+	//return t.Format(time.RFC3339)
+	return t.Format("2006-01-02 15:04:05")
 }
