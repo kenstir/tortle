@@ -24,11 +24,21 @@ func init() {
 	viper.BindPFlag("columns", lsCmd.Flags().Lookup("columns"))
 }
 
+var validColumns = []string{"added", "name", "ratio", "state"}
+
 var lsCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List torrents",
 	Run: func(cmd *cobra.Command, args []string) {
 		verbosity := viper.GetInt("verbose")
+		columns := viper.GetStringSlice("columns")
+		for _, column := range columns {
+			if !checkColumn(column) {
+				fmt.Printf("Unknown column: %s\n", column)
+				fmt.Printf("Valid values for --column: %s\n", strings.Join(validColumns, ", "))
+				os.Exit(1)
+			}
+		}
 
 		// debug
 		if verbosity > 0 {
@@ -73,39 +83,49 @@ var lsCmd = &cobra.Command{
 		if verbosity > 0 {
 			fmt.Printf("Found %d torrents\n", len(torrentsStatus))
 		}
-		columns := viper.GetStringSlice("columns")
 		if !viper.GetBool("noheader") {
 			header := strings.Join(columns, ",")
 			fmt.Printf("%s\n", header)
 		}
 		for _, ts := range torrentsStatus {
-			// for each column, add the value to a slice
-			// then join the slice with commas
-			// then print the line
 			var line []string
 			for _, column := range columns {
-				switch column {
-				case "added":
-					line = append(line, dateString(ts.TimeAdded))
-				case "name":
-					line = append(line, ts.Name)
-				case "ratio":
-					line = append(line, fmt.Sprintf("%.1f", ts.Ratio))
-				case "state":
-					line = append(line, ts.State)
-				default:
-					fmt.Printf("Unknown column: %s\n", column)
-					os.Exit(1)
-				}
+				line = append(line, formatColumn(column, ts))
 			}
 			fmt.Printf("%s\n", strings.Join(line, ","))
 		}
 	},
 }
 
-// / convert a unix timestamp to a string
+// return true if the column is in the slice validColumns
+func checkColumn(column string) bool {
+	for _, validColumn := range validColumns {
+		if column == validColumn {
+			return true
+		}
+	}
+	return false
+}
+
+// format the given column
+func formatColumn(column string, ts *deluge.TorrentStatus) string {
+	switch column {
+	case "added":
+		return dateString(ts.TimeAdded)
+	case "name":
+		return ts.Name
+	case "ratio":
+		return fmt.Sprintf("%.1f", ts.Ratio)
+	case "state":
+		return ts.State
+	default:
+		return fmt.Sprintf("Unknown column: %s", column)
+	}
+}
+
+// convert a unix timestamp to a string
 func dateString(str float32) string {
 	t := time.Unix(int64(str), 0)
-	//return t.Format(time.RFC3339)
+	//return t.Format(time.RFC3339) //2022-04-11T15:33:20-04:00
 	return t.Format("2006-01-02 15:04:05")
 }
