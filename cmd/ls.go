@@ -11,6 +11,7 @@ import (
 	"time"
 
 	deluge "github.com/autobrr/go-deluge"
+	"github.com/moistari/rls"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -24,7 +25,7 @@ func init() {
 	viper.BindPFlag("columns", lsCmd.Flags().Lookup("columns"))
 }
 
-var validColumns = []string{"added", "name", "ratio", "state"}
+var validColumns = []string{"added", "audio", "channels", "completed", "download_folder", "group", "name", "ratio", "save_path", "seed_time", "state"}
 
 var lsCmd = &cobra.Command{
 	Use:   "ls",
@@ -109,23 +110,42 @@ func checkColumn(column string) bool {
 
 // format the given column
 func formatColumn(column string, ts *deluge.TorrentStatus) string {
+	if ts.DownloadLocation != ts.SavePath {
+		fmt.Printf("DownloadLocation: %s\n", ts.DownloadLocation)
+		fmt.Printf("SavePath: %s\n", ts.SavePath)
+	}
+	r := rls.ParseString(ts.Name)
 	switch column {
 	case "added":
-		return dateString(ts.TimeAdded)
+		return dateString(int64(ts.TimeAdded))
+	case "audio":
+		return strings.Join(r.Audio, " ")
+	case "channels":
+		return r.Channels
+	case "completed":
+		return dateString(ts.CompletedTime)
+	case "download_folder":
+		return ts.DownloadLocation
 	case "name":
 		return ts.Name
 	case "ratio":
 		return fmt.Sprintf("%.1f", ts.Ratio)
+	case "save_path":
+		return ts.SavePath
+	case "seed_time":
+		return (time.Duration(ts.SeedingTime) * time.Second).String()
 	case "state":
 		return ts.State
+	case "group":
+		return r.Group
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}
 }
 
 // convert a unix timestamp to a string
-func dateString(str float32) string {
-	t := time.Unix(int64(str), 0)
+func dateString(timestamp int64) string {
+	t := time.Unix(timestamp, 0)
 	//return t.Format(time.RFC3339) //2022-04-11T15:33:20-04:00
 	return t.Format("2006-01-02 15:04:05")
 }
