@@ -25,7 +25,7 @@ func init() {
 	viper.BindPFlag("columns", lsCmd.Flags().Lookup("columns"))
 }
 
-var validColumns = []string{"added", "audio", "channels", "completed", "download_folder", "group", "name", "ratio", "save_path", "seed_time", "state"}
+var validColumns = []string{"added", "audio", "channels", "completed", "download_location", "group", "name", "ratio", "save_path", "seed_time", "state"}
 
 var lsCmd = &cobra.Command{
 	Use:   "ls",
@@ -110,10 +110,6 @@ func checkColumn(column string) bool {
 
 // format the given column
 func formatColumn(column string, ts *deluge.TorrentStatus) string {
-	if ts.DownloadLocation != ts.SavePath {
-		fmt.Printf("DownloadLocation: %s\n", ts.DownloadLocation)
-		fmt.Printf("SavePath: %s\n", ts.SavePath)
-	}
 	r := rls.ParseString(ts.Name)
 	switch column {
 	case "added":
@@ -124,14 +120,14 @@ func formatColumn(column string, ts *deluge.TorrentStatus) string {
 		return r.Channels
 	case "completed":
 		return dateString(ts.CompletedTime)
-	case "download_folder":
+	case "download_location":
 		return ts.DownloadLocation
 	case "name":
 		return ts.Name
 	case "ratio":
 		return fmt.Sprintf("%.1f", ts.Ratio)
 	case "save_path":
-		return ts.SavePath
+		return ts.SavePath // same as ts.DownloadLocation but easier to type
 	case "seed_time":
 		return (time.Duration(ts.SeedingTime) * time.Second).String()
 	case "state":
