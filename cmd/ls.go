@@ -90,8 +90,9 @@ var lsCmd = &cobra.Command{
 		}
 		for _, ts := range torrentsStatus {
 			var line []string
+			r := rls.ParseString(ts.Name)
 			for _, column := range columns {
-				line = append(line, formatColumn(column, ts))
+				line = append(line, formatColumn(column, ts, r))
 			}
 			fmt.Printf("%s\n", strings.Join(line, ","))
 		}
@@ -109,8 +110,7 @@ func checkColumn(column string) bool {
 }
 
 // format the given column
-func formatColumn(column string, ts *deluge.TorrentStatus) string {
-	r := rls.ParseString(ts.Name)
+func formatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) string {
 	switch column {
 	case "added":
 		return dateString(int64(ts.TimeAdded))
