@@ -25,7 +25,19 @@ func init() {
 	viper.BindPFlag("columns", lsCmd.Flags().Lookup("columns"))
 }
 
-var validColumns = []string{"added", "audio", "channels", "completed", "download_location", "group", "name", "ratio", "save_path", "seed_time", "state"}
+var validColumns = []string{
+	"added",
+	"audio",
+	"channels",
+	"completed",
+	"download_location",
+	"group",
+	"name",
+	"ratio",
+	"save_path",
+	"seed_time",
+	"state",
+}
 
 var lsCmd = &cobra.Command{
 	Use:   "ls",
