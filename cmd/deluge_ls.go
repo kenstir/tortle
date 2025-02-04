@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(lsCmd)
+	delugeCmd.AddCommand(lsCmd)
 
 	lsCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
 	lsCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
@@ -55,17 +55,17 @@ var lsCmd = &cobra.Command{
 
 		// debug
 		if verbosity > 0 {
-			fmt.Printf("server: %s\n", viper.GetString("server"))
-			fmt.Printf("port: %d\n", viper.GetUint("port"))
-			fmt.Printf("username: %s\n", viper.GetString("username"))
-			fmt.Printf("password: %s\n", viper.GetString("password"))
+			fmt.Printf("server: %s\n", viper.GetString("deluge.server"))
+			fmt.Printf("port: %d\n", viper.GetUint("deluge.port"))
+			fmt.Printf("username: %s\n", viper.GetString("deluge.username"))
+			fmt.Printf("password: %s\n", viper.GetString("deluge.password"))
 		}
 
 		client := deluge.NewV2(deluge.Settings{
-			Hostname:             viper.GetString("server"),
-			Port:                 viper.GetUint("port"),
-			Login:                viper.GetString("username"),
-			Password:             viper.GetString("password"),
+			Hostname:             viper.GetString("deluge.server"),
+			Port:                 viper.GetUint("deluge.port"),
+			Login:                viper.GetString("deluge.username"),
+			Password:             viper.GetString("deluge.password"),
 			DebugServerResponses: true,
 		})
 

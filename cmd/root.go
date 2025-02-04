@@ -1,6 +1,5 @@
 /*
 Copyright © 2025 Kenneth H. Cox
-
 */
 package cmd
 
@@ -35,15 +34,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./torinfo.toml)")
 
-	rootCmd.PersistentFlags().StringP("server", "s", "localhost", "server address")
-	rootCmd.PersistentFlags().IntP("port", "p", 9091, "server port")
-	rootCmd.PersistentFlags().StringP("username", "U", "admin", "server username")
-	rootCmd.PersistentFlags().StringP("password", "P", "password", "server password")
 	rootCmd.PersistentFlags().CountVarP(&verbosity, "verbose", "v", "Increase verbosity (may be specified multiple times)")
-	viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
-	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
-	viper.BindPFlag("username", rootCmd.PersistentFlags().Lookup("username"))
-	viper.BindPFlag("password", rootCmd.PersistentFlags().Lookup("password"))
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 }
 
