@@ -1,5 +1,5 @@
 /*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
+Copyright © 2025 Kenneth H. Cox
 */
 package cmd
 
@@ -22,8 +22,9 @@ func init() {
 }
 
 var delugeCmd = &cobra.Command{
-	Use:   "deluge",
-	Short: "Manage a deluge server",
+	Use:     "deluge",
+	Aliases: []string{"d"},
+	Short:   "Manage a deluge server",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

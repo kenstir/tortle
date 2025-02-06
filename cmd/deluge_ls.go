@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -17,15 +18,15 @@ import (
 )
 
 func init() {
-	delugeCmd.AddCommand(lsCmd)
+	delugeCmd.AddCommand(delugeListCmd)
 
-	lsCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
-	lsCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
-	viper.BindPFlag("noheader", lsCmd.Flags().Lookup("noheader"))
-	viper.BindPFlag("columns", lsCmd.Flags().Lookup("columns"))
+	delugeListCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
+	delugeListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
+	viper.BindPFlag("deluge.noheader", delugeListCmd.Flags().Lookup("noheader"))
+	viper.BindPFlag("deluge.columns", delugeListCmd.Flags().Lookup("columns"))
 }
 
-var validColumns = []string{
+var delugeValidColumns = []string{
 	"added",
 	"audio",
 	"channels",
@@ -39,28 +40,27 @@ var validColumns = []string{
 	"state",
 }
 
-var lsCmd = &cobra.Command{
+var delugeListCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List torrents",
 	Run: func(cmd *cobra.Command, args []string) {
 		verbosity := viper.GetInt("verbose")
-		columns := viper.GetStringSlice("columns")
+		columns := viper.GetStringSlice("deluge.columns")
 		for _, column := range columns {
-			if !checkColumn(column) {
+			if !slices.Contains(delugeValidColumns, column) {
 				fmt.Printf("Unknown column: %s\n", column)
-				fmt.Printf("Valid values for --column: %s\n", strings.Join(validColumns, ", "))
+				fmt.Printf("Valid values for --column: %s\n", strings.Join(delugeValidColumns, ", "))
 				os.Exit(1)
 			}
 		}
 
-		// debug
+		// create a deluge client
 		if verbosity > 0 {
 			fmt.Printf("server: %s\n", viper.GetString("deluge.server"))
 			fmt.Printf("port: %d\n", viper.GetUint("deluge.port"))
 			fmt.Printf("username: %s\n", viper.GetString("deluge.username"))
 			fmt.Printf("password: %s\n", viper.GetString("deluge.password"))
 		}
-
 		client := deluge.NewV2(deluge.Settings{
 			Hostname:             viper.GetString("deluge.server"),
 			Port:                 viper.GetUint("deluge.port"),
@@ -69,6 +69,7 @@ var lsCmd = &cobra.Command{
 			DebugServerResponses: true,
 		})
 
+		// connect
 		err := client.Connect(context.Background())
 		if err != nil {
 			fmt.Printf("Error connecting to deluge: %s\n", err)
@@ -88,6 +89,7 @@ var lsCmd = &cobra.Command{
 		// }
 		// fmt.Printf("Found %d methods\n", len(methods))
 
+		// get torrents
 		torrentsStatus, err := client.TorrentsStatus(context.Background(), deluge.StateUnspecified, nil)
 		if err != nil {
 			fmt.Printf("Error getting torrents status: %s\n", err)
@@ -96,6 +98,8 @@ var lsCmd = &cobra.Command{
 		if verbosity > 0 {
 			fmt.Printf("Found %d torrents\n", len(torrentsStatus))
 		}
+
+		// print as CSV
 		if !viper.GetBool("noheader") {
 			header := strings.Join(columns, ",")
 			fmt.Printf("%s\n", header)
@@ -104,34 +108,24 @@ var lsCmd = &cobra.Command{
 			var line []string
 			r := rls.ParseString(ts.Name)
 			for _, column := range columns {
-				line = append(line, formatColumn(column, ts, r))
+				line = append(line, delugeFormatColumn(column, ts, r))
 			}
 			fmt.Printf("%s\n", strings.Join(line, ","))
 		}
 	},
 }
 
-// return true if the column is in the slice validColumns
-func checkColumn(column string) bool {
-	for _, validColumn := range validColumns {
-		if column == validColumn {
-			return true
-		}
-	}
-	return false
-}
-
 // format the given column
-func formatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) string {
+func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) string {
 	switch column {
 	case "added":
-		return dateString(int64(ts.TimeAdded))
+		return formatTimestamp(int64(ts.TimeAdded))
 	case "audio":
 		return strings.Join(r.Audio, " ")
 	case "channels":
 		return r.Channels
 	case "completed":
-		return dateString(ts.CompletedTime)
+		return formatTimestamp(ts.CompletedTime)
 	case "download_location":
 		return ts.DownloadLocation
 	case "name":
@@ -149,11 +143,4 @@ func formatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) string
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}
-}
-
-// convert a unix timestamp to a string
-func dateString(timestamp int64) string {
-	t := time.Unix(timestamp, 0)
-	//return t.Format(time.RFC3339) //2022-04-11T15:33:20-04:00
-	return t.Format("2006-01-02 15:04:05")
 }
