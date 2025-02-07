@@ -31,7 +31,7 @@ var qbitValidColumns = []string{
 	"audio",
 	"channels",
 	"completed",
-	"download_location",
+	"download_path",
 	"group",
 	"name",
 	"ratio",
@@ -113,8 +113,8 @@ func formatColumn(column string, t qbittorrent.Torrent, r rls.Release) string {
 		return r.Channels
 	case "completed":
 		return formatTimestamp(t.CompletionOn)
-	case "download_location":
-		return t.SavePath
+	case "download_path":
+		return t.DownloadPath
 	case "name":
 		return t.Name
 	case "ratio":
