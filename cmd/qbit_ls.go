@@ -21,9 +21,11 @@ func init() {
 	qbitCmd.AddCommand(qbitListCmd)
 
 	qbitListCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
+	qbitListCmd.Flags().StringP("filter", "f", "", "Filter torrents by name")
 	qbitListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
-	viper.BindPFlag("qbit.noheader", qbitListCmd.Flags().Lookup("noheader"))
 	viper.BindPFlag("qbit.columns", qbitListCmd.Flags().Lookup("columns"))
+	viper.BindPFlag("qbit.filter", qbitListCmd.Flags().Lookup("filter"))
+	viper.BindPFlag("qbit.noheader", qbitListCmd.Flags().Lookup("noheader"))
 }
 
 var qbitValidColumns = []string{
@@ -44,7 +46,9 @@ var qbitListCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List torrents",
 	Run: func(cmd *cobra.Command, args []string) {
+		// get and check the flags
 		verbosity := viper.GetInt("verbose")
+		filter := viper.GetString("qbit.filter")
 		columns := viper.GetStringSlice("qbit.columns")
 		for _, column := range columns {
 			if !slices.Contains(qbitValidColumns, column) {
@@ -77,7 +81,10 @@ var qbitListCmd = &cobra.Command{
 		}
 
 		// get torrents
-		torrents, err := client.GetTorrents(qbittorrent.TorrentFilterOptions{})
+		//torrents, err := client.GetTorrents(qbittorrent.TorrentFilterOptions{})
+		torrents, err := client.GetTorrents(qbittorrent.TorrentFilterOptions{
+			Sort: "name",
+		})
 		if err != nil {
 			fmt.Printf("Error getting torrents: %s\n", err.Error())
 			os.Exit(1)
@@ -92,6 +99,12 @@ var qbitListCmd = &cobra.Command{
 			fmt.Printf("%s\n", header)
 		}
 		for _, t := range torrents {
+			// skip if the name doesn't match the filter
+			if filter != "" && !strings.Contains(t.Name, filter) {
+				continue
+			}
+
+			// format columns and print as CSV
 			var line []string
 			r := rls.ParseString(t.Name)
 			for _, column := range columns {

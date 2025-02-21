@@ -21,9 +21,11 @@ func init() {
 	delugeCmd.AddCommand(delugeListCmd)
 
 	delugeListCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
+	delugeListCmd.Flags().StringP("filter", "f", "", "Filter torrents by name")
 	delugeListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
-	viper.BindPFlag("deluge.noheader", delugeListCmd.Flags().Lookup("noheader"))
 	viper.BindPFlag("deluge.columns", delugeListCmd.Flags().Lookup("columns"))
+	viper.BindPFlag("deluge.filter", delugeListCmd.Flags().Lookup("filter"))
+	viper.BindPFlag("deluge.noheader", delugeListCmd.Flags().Lookup("noheader"))
 }
 
 var delugeValidColumns = []string{
@@ -44,7 +46,9 @@ var delugeListCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List torrents",
 	Run: func(cmd *cobra.Command, args []string) {
+		// get and check the flags
 		verbosity := viper.GetInt("verbose")
+		filter := viper.GetString("deluge.filter")
 		columns := viper.GetStringSlice("deluge.columns")
 		for _, column := range columns {
 			if !slices.Contains(delugeValidColumns, column) {
@@ -99,12 +103,20 @@ var delugeListCmd = &cobra.Command{
 			fmt.Printf("Found %d torrents\n", len(torrentsStatus))
 		}
 
+		// TODO: sort torrentsStatus by name
+
 		// print as CSV
 		if !viper.GetBool("noheader") {
 			header := strings.Join(columns, ",")
 			fmt.Printf("%s\n", header)
 		}
 		for _, ts := range torrentsStatus {
+			// skip if the name doesn't match the filter
+			if filter != "" && !strings.Contains(ts.Name, filter) {
+				continue
+			}
+
+			// format columns and print as CSV
 			var line []string
 			r := rls.ParseString(ts.Name)
 			for _, column := range columns {
