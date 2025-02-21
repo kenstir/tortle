@@ -99,7 +99,7 @@ var qbitListCmd = &cobra.Command{
 		}
 		for _, t := range torrents {
 			// skip if the name doesn't match the filter
-			if filter != "" && !strings.Contains(t.Name, filter) {
+			if filter != "" && !strings.Contains(strings.ToLower(t.Name), strings.ToLower(filter)) {
 				continue
 			}
 

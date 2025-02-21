@@ -122,7 +122,7 @@ var delugeListCmd = &cobra.Command{
 			ts := torrentsStatus[key]
 
 			// skip if the name doesn't match the filter
-			if filter != "" && !strings.Contains(ts.Name, filter) {
+			if filter != "" && !strings.Contains(strings.ToLower(ts.Name), strings.ToLower(filter)) {
 				continue
 			}
 
