@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -103,14 +104,23 @@ var delugeListCmd = &cobra.Command{
 			fmt.Printf("Found %d torrents\n", len(torrentsStatus))
 		}
 
-		// TODO: sort torrentsStatus by name
+		// sort torrentsStatus by name
+		keys := make([]string, 0, len(torrentsStatus))
+		for key, _ := range torrentsStatus {
+			keys = append(keys, key)
+		}
+		sort.Slice(keys, func(i, j int) bool {
+			return torrentsStatus[keys[i]].Name < torrentsStatus[keys[j]].Name
+		})
 
 		// print as CSV
 		if !viper.GetBool("noheader") {
 			header := strings.Join(columns, ",")
 			fmt.Printf("%s\n", header)
 		}
-		for _, ts := range torrentsStatus {
+		for _, key := range keys {
+			ts := torrentsStatus[key]
+
 			// skip if the name doesn't match the filter
 			if filter != "" && !strings.Contains(ts.Name, filter) {
 				continue

@@ -81,7 +81,6 @@ var qbitListCmd = &cobra.Command{
 		}
 
 		// get torrents
-		//torrents, err := client.GetTorrents(qbittorrent.TorrentFilterOptions{})
 		torrents, err := client.GetTorrents(qbittorrent.TorrentFilterOptions{
 			Sort: "name",
 		})
