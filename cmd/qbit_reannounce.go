@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -21,6 +21,11 @@ type ReannounceOptions struct {
 	ExtraAttempts int
 	ExtraInterval int
 	MaxAge        int
+}
+
+type ReannounceContext struct {
+	Client *qbittorrent.Client
+	Log    *log.Logger
 }
 
 func init() {
@@ -47,11 +52,13 @@ func reannounceCommandRun(cmd *cobra.Command, args []string) {
 	extraInterval := 30
 	maxAge := 999999 //60 * 60 // 1 hour
 
+	logger := log.New(os.Stdout, "", log.LstdFlags)
+
 	// create a qbit client
 	if verbosity > 0 {
-		fmt.Printf("server: %s\n", viper.GetString("qbit.server"))
-		fmt.Printf("username: %s\n", viper.GetString("qbit.username"))
-		fmt.Printf("password: %s\n", viper.GetString("qbit.password"))
+		logger.Printf("server: %s\n", viper.GetString("qbit.server"))
+		logger.Printf("username: %s\n", viper.GetString("qbit.username"))
+		logger.Printf("password: %s\n", viper.GetString("qbit.password"))
 	}
 	client := qbittorrent.NewClient(qbittorrent.Config{
 		Host:     viper.GetString("qbit.server"),
@@ -67,19 +74,18 @@ func reannounceCommandRun(cmd *cobra.Command, args []string) {
 		ExtraInterval: extraInterval,
 		MaxAge:        maxAge,
 	}
-	reannounce(context.Background(), client, hash, options)
+	reannounce(context.Background(), logger, client, hash, options)
 }
 
-func reannounce(ctx context.Context, client *qbittorrent.Client, hash string, options ReannounceOptions) {
+func reannounce(ctx context.Context, logger *log.Logger, client *qbittorrent.Client, hash string, options ReannounceOptions) {
 
 	// connect
 	err := client.LoginCtx(ctx)
 	if err != nil {
-		fmt.Printf("Error connecting to qBittorrent: %s\n", err)
-		os.Exit(1)
+		logger.Fatalf("Error connecting to qBittorrent: %s\n", err)
 	}
 	if verbosity > 0 {
-		fmt.Printf("Connected to qBittorrent\n")
+		logger.Printf("Connected to qBittorrent\n")
 	}
 
 	// get torrent
@@ -87,41 +93,38 @@ func reannounce(ctx context.Context, client *qbittorrent.Client, hash string, op
 		Hashes: []string{hash},
 	})
 	if err != nil {
-		fmt.Printf("Error getting torrents: %s\n", err.Error())
-		os.Exit(1)
+		logger.Fatalf("Error getting torrents: %s\n", err.Error())
 	}
 	if len(torrents) != 1 {
-		fmt.Printf("%s: torrent not found\n", hash)
-		os.Exit(1)
+		logger.Fatalf("%s: torrent not found\n", hash)
 	}
 	torrent := torrents[0]
 	if verbosity > 0 {
-		fmt.Printf("%s: added=%d\n", hash, torrent.AddedOn)
+		logger.Printf("%s: added=%d\n", hash, torrent.AddedOn)
 	}
 	now := time.Now().Unix()
 	if now-torrent.AddedOn > int64(options.MaxAge) {
-		fmt.Printf("%s: torrent is older than %d seconds\n", hash, options.MaxAge)
-		os.Exit(1)
+		logger.Printf("%s: torrent is older than %d seconds\n", hash, options.MaxAge)
+		return
 	}
 
 	// reannounce
-	reannounceUntilSeeds(ctx, client, torrents[0], options)
-	reannounceForGoodMeasure(ctx, client, torrents[0], options)
+	reannounceUntilSeeds(ctx, logger, client, torrents[0], options)
+	reannounceForGoodMeasure(ctx, logger, client, torrents[0], options)
 }
 
-func reannounceUntilSeeds(ctx context.Context, client *qbittorrent.Client, t qbittorrent.Torrent, options ReannounceOptions) bool {
+func reannounceUntilSeeds(ctx context.Context, logger *log.Logger, client *qbittorrent.Client, t qbittorrent.Torrent, options ReannounceOptions) bool {
 	for i := 0; i < options.Attempts; i++ {
 		// delay before every attempt
 		if verbosity > 0 {
-			fmt.Printf("try %d: Sleep %d\n", i, options.Interval)
+			logger.Printf("try %d: Sleep %d\n", i, options.Interval)
 		}
 		time.Sleep(time.Duration(options.Interval) * time.Second)
 
 		// get trackers
 		trackers, err := client.GetTorrentTrackersCtx(ctx, t.Hash)
 		if err != nil {
-			fmt.Printf("%s: Error getting trackers: %s\n", t.Hash, err)
-			os.Exit(1)
+			logger.Fatalf("%s: Error getting trackers: %s\n", t.Hash, err)
 		}
 
 		// find current tracker
@@ -129,7 +132,7 @@ func reannounceUntilSeeds(ctx context.Context, client *qbittorrent.Client, t qbi
 		var tracker qbittorrent.TorrentTracker
 		found := false
 		for _, tr := range trackers {
-			fmt.Printf("%s: u=\"%s\" status=%d peer=%d seed=%d leech=%d dl=%d msg=\"%s\"\n", t.Hash, tr.Url, tr.Status, tr.NumPeers, tr.NumSeeds, tr.NumLeechers, tr.NumDownloaded, tr.Message)
+			logger.Printf("%s: u=\"%s\" status=%d peer=%d seed=%d leech=%d dl=%d msg=\"%s\"\n", t.Hash, tr.Url, tr.Status, tr.NumPeers, tr.NumSeeds, tr.NumLeechers, tr.NumDownloaded, tr.Message)
 			//fmt.Printf("%s: %v\n", t.Hash, tr)
 			if tr.Url == t.Tracker {
 				tracker = tr
@@ -138,48 +141,45 @@ func reannounceUntilSeeds(ctx context.Context, client *qbittorrent.Client, t qbi
 			}
 		}
 		if !found {
-			fmt.Printf("%s: Tracker with URL %s not found\n", t.Hash, t.Tracker)
-			os.Exit(1)
+			logger.Fatalf("%s: Tracker with URL %s not found\n", t.Hash, t.Tracker)
 		}
-		fmt.Printf("%s: status %s msg %s\n", t.Hash, trackerStatus(tracker.Status), tracker.Message, tracker.Url)
+		logger.Printf("%s: status %s msg %s\n", t.Hash, trackerStatus(tracker.Status), tracker.Message)
 
 		// if status not ok then reannounce
 		ok, _ := isTrackerStatusOK(trackers)
 		if !ok {
-			forceReannounce(ctx, client, t)
+			forceReannounce(ctx, logger, client, t)
 			continue
 		}
 
 		// get seed information
-		fmt.Printf("%s: num_seeds=%d\n", t.Hash, tracker.NumSeeds)
+		logger.Printf("%s: num_seeds=%d\n", t.Hash, tracker.NumSeeds)
 		if tracker.NumSeeds > 0 {
 			return true
 		}
 	}
 
-	fmt.Printf("%s: Reannounce attempts exhausted\n", t.Hash)
-	os.Exit(1)
+	logger.Fatalf("%s: Reannounce attempts exhausted\n", t.Hash)
 	return false
 }
 
-func reannounceForGoodMeasure(ctx context.Context, client *qbittorrent.Client, t qbittorrent.Torrent, options ReannounceOptions) {
+func reannounceForGoodMeasure(ctx context.Context, logger *log.Logger, client *qbittorrent.Client, t qbittorrent.Torrent, options ReannounceOptions) {
 	for i := 0; i < options.ExtraAttempts; i++ {
 		// delay before every attempt
 		if verbosity > 0 {
-			fmt.Printf("try %d: Sleep %d\n", i, options.ExtraInterval)
+			logger.Printf("extra %d: Sleep %d\n", i, options.ExtraInterval)
 		}
 		time.Sleep(time.Duration(options.ExtraInterval) * time.Second)
 
 		// force reannounce
-		forceReannounce(ctx, client, t)
+		forceReannounce(ctx, logger, client, t)
 	}
 }
 
-func forceReannounce(ctx context.Context, client *qbittorrent.Client, t qbittorrent.Torrent) {
-	fmt.Printf("%s: Forcing reannounce\n", t.Hash)
+func forceReannounce(ctx context.Context, logger *log.Logger, client *qbittorrent.Client, t qbittorrent.Torrent) {
+	logger.Printf("%s: Forcing reannounce\n", t.Hash)
 	// if err := client.ReAnnounceTorrentsCtx(ctx, []string{t.Hash}); err != nil {
-	// 	fmt.Printf("%s: Error reannouncing: %s\n", t.Hash, err)
-	// 	os.Exit(1)
+	// 	logger.Printf("%s: Error reannouncing: %s\n", t.Hash, err)
 	// }
 }
 
