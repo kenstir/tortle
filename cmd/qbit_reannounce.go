@@ -65,9 +65,7 @@ func reannounceCommandRun(cmd *cobra.Command, args []string) {
 
 	// create a qbit client
 	if verbosity > 0 {
-		logger.Printf("server: %s\n", viper.GetString("qbit.server"))
-		logger.Printf("username: %s\n", viper.GetString("qbit.username"))
-		logger.Printf("password: %s\n", viper.GetString("qbit.password"))
+		logger.Printf("Connecting to %s as user %s\n", viper.GetString("qbit.server"), viper.GetString("qbit.username"))
 	}
 	client := qbittorrent.NewClient(qbittorrent.Config{
 		Host:     viper.GetString("qbit.server"),
@@ -104,25 +102,23 @@ func reannounce(ctx context.Context, logger *log.Logger, client *qbittorrent.Cli
 	if err != nil {
 		logger.Fatalf("Error getting torrents: %s\n", err.Error())
 	}
-	if len(torrents) != 1 {
+	if len(torrents) == 0 {
 		logger.Fatalf("%s: torrent not found\n", hash)
 	}
 	torrent := torrents[0]
-	if verbosity > 0 {
-		logger.Printf("%s: added=%d\n", hash, torrent.AddedOn)
-	}
 	age := time.Now().Unix() - torrent.AddedOn
+	logger.Printf("%s: found torrent age=%d tracker=%s\n", hash, age, torrent.Tracker)
 	if age > int64(options.MaxAge) {
 		logger.Printf("%s: torrent is %ds old, max_age is %ds\n", hash, age, options.MaxAge)
 		return
 	}
 
 	// reannounce
-	reannounceUntilSeeds(ctx, logger, client, torrents[0], options)
-	reannounceForGoodMeasure(ctx, logger, client, torrents[0], options)
+	reannounceUntilSeeded(ctx, logger, client, torrent, options)
+	reannounceForGoodMeasure(ctx, logger, client, torrent, options)
 }
 
-func reannounceUntilSeeds(ctx context.Context, logger *log.Logger, client *qbittorrent.Client, t qbittorrent.Torrent, options ReannounceOptions) bool {
+func reannounceUntilSeeded(ctx context.Context, logger *log.Logger, client *qbittorrent.Client, t qbittorrent.Torrent, options ReannounceOptions) bool {
 	for i := 1; i <= options.Attempts; i++ {
 		// delay before every attempt
 		if verbosity > 0 {
@@ -137,7 +133,6 @@ func reannounceUntilSeeds(ctx context.Context, logger *log.Logger, client *qbitt
 		}
 
 		// find current tracker
-		// TODO: is this wrong for public torrents with DHT and PEX?
 		var tracker qbittorrent.TorrentTracker
 		found := false
 		for _, tr := range trackers {
