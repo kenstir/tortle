@@ -46,6 +46,7 @@ func initConfig() {
 	} else {
 		// Use ./torinfo.toml
 		viper.AddConfigPath(".")
+		viper.AddConfigPath("$HOME")
 		viper.SetConfigName("torinfo")
 		viper.SetConfigType("toml")
 	}
