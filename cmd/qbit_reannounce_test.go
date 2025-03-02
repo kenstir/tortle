@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/autobrr/go-qbittorrent"
@@ -36,15 +38,18 @@ func (m *MockClient) ReAnnounceTorrentsCtx(ctx context.Context, hashes []string)
 func TestReannounce(t *testing.T) {
 	mockClient := new(MockClient)
 	ctx := context.Background()
+	logger := log.New(os.Stdout, "", log.LstdFlags)
 	hash := "testhash"
-	attempts := 3
+	attempts := 2
 	interval := 1
-	verbosity := 1
+	extraAttempts := 1
+	extraInterval := 1
+	maxAge := 60 * 60
 
 	torrent := qbittorrent.Torrent{Hash: hash}
 	trackers := []qbittorrent.TorrentTracker{
-		{Status: qbittorrent.TrackerStatusNotWorking, Url: "http://tracker1.com"},
-		{Status: qbittorrent.TrackerStatusOK, Url: "http://tracker2.com"},
+		{Status: qbittorrent.TrackerStatusNotWorking, Url: "http://tracker1.example.org"},
+		{Status: qbittorrent.TrackerStatusOK, Url: "http://tracker2.example.org"},
 	}
 
 	mockClient.On("LoginCtx", ctx).Return(nil)
@@ -52,7 +57,14 @@ func TestReannounce(t *testing.T) {
 	mockClient.On("GetTorrentTrackersCtx", ctx, hash).Return(trackers, nil)
 	mockClient.On("ReAnnounceTorrentsCtx", ctx, []string{hash}).Return(nil)
 
-	Reannounce(ctx, mockClient, hash, attempts, interval, verbosity)
+	options := ReannounceOptions{
+		Attempts:      attempts,
+		Interval:      interval,
+		ExtraAttempts: extraAttempts,
+		ExtraInterval: extraInterval,
+		MaxAge:        maxAge,
+	}
+	reannounce(ctx, logger, mockClient, hash, options)
 
 	mockClient.AssertExpectations(t)
 }
@@ -69,7 +81,7 @@ func TestReannounce_TorrentNotFound(t *testing.T) {
 	mockClient.On("GetTorrents", qbittorrent.TorrentFilterOptions{Hashes: []string{hash}}).Return([]qbittorrent.Torrent{}, nil)
 
 	assert.Panics(t, func() {
-		Reannounce(ctx, mockClient, hash, attempts, interval, verbosity)
+		reannounce(ctx, mockClient, hash, attempts, interval, verbosity)
 	})
 
 	mockClient.AssertExpectations(t)
@@ -87,7 +99,7 @@ func TestReannounce_ErrorGettingTorrents(t *testing.T) {
 	mockClient.On("GetTorrents", qbittorrent.TorrentFilterOptions{Hashes: []string{hash}}).Return(nil, assert.AnError)
 
 	assert.Panics(t, func() {
-		Reannounce(ctx, mockClient, hash, attempts, interval, verbosity)
+		reannounce(ctx, mockClient, hash, attempts, interval, verbosity)
 	})
 
 	mockClient.AssertExpectations(t)

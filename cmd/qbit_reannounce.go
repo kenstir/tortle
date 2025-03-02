@@ -31,6 +31,16 @@ type ReannounceContext struct {
 func init() {
 	qbitCmd.AddCommand(qbitReannounceCmd)
 
+	qbitReannounceCmd.Flags().IntP("attempts", "a", 60, "Number of reannounce attempts")
+	qbitReannounceCmd.Flags().IntP("interval", "i", 7, "Interval between reannounce attempts")
+	qbitReannounceCmd.Flags().IntP("extra_attempts", "A", 2, "Number of extra reannounce attempts")
+	qbitReannounceCmd.Flags().IntP("extra_interval", "I", 30, "Interval between extra reannounce attempts")
+	qbitReannounceCmd.Flags().IntP("max_age", "m", 60*60, "Maximum age of torrent in seconds")
+	viper.BindPFlag("qbit.reannounce.attempts", qbitReannounceCmd.Flags().Lookup("attempts"))
+	viper.BindPFlag("qbit.reannounce.interval", qbitReannounceCmd.Flags().Lookup("interval"))
+	viper.BindPFlag("qbit.reannounce.extra_attempts", qbitReannounceCmd.Flags().Lookup("extra_attempts"))
+	viper.BindPFlag("qbit.reannounce.extra_interval", qbitReannounceCmd.Flags().Lookup("extra_interval"))
+	viper.BindPFlag("qbit.reannounce.max_age", qbitReannounceCmd.Flags().Lookup("max_age"))
 }
 
 var qbitReannounceCmd = &cobra.Command{
@@ -42,15 +52,14 @@ var qbitReannounceCmd = &cobra.Command{
 }
 
 func reannounceCommandRun(cmd *cobra.Command, args []string) {
-	// get and check the flags
+	// get the flags
 	verbosity := viper.GetInt("verbose")
 	hash := args[0]
-	// TODO: get these from config
-	attempts := 30
-	interval := 7
-	extraAttempts := 2
-	extraInterval := 30
-	maxAge := 999999 //60 * 60 // 1 hour
+	attempts := viper.GetInt("qbit.reannounce.attempts")
+	interval := viper.GetInt("qbit.reannounce.interval")
+	extraAttempts := viper.GetInt("qbit.reannounce.extra_attempts")
+	extraInterval := viper.GetInt("qbit.reannounce.extra_interval")
+	maxAge := viper.GetInt("qbit.reannounce.max_age")
 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 
@@ -102,9 +111,9 @@ func reannounce(ctx context.Context, logger *log.Logger, client *qbittorrent.Cli
 	if verbosity > 0 {
 		logger.Printf("%s: added=%d\n", hash, torrent.AddedOn)
 	}
-	now := time.Now().Unix()
-	if now-torrent.AddedOn > int64(options.MaxAge) {
-		logger.Printf("%s: torrent is older than %d seconds\n", hash, options.MaxAge)
+	age := time.Now().Unix() - torrent.AddedOn
+	if age > int64(options.MaxAge) {
+		logger.Printf("%s: torrent is %ds old, max_age is %ds\n", hash, age, options.MaxAge)
 		return
 	}
 
