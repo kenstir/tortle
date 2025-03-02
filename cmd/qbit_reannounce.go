@@ -123,7 +123,7 @@ func reannounce(ctx context.Context, logger *log.Logger, client *qbittorrent.Cli
 }
 
 func reannounceUntilSeeds(ctx context.Context, logger *log.Logger, client *qbittorrent.Client, t qbittorrent.Torrent, options ReannounceOptions) bool {
-	for i := 0; i < options.Attempts; i++ {
+	for i := 1; i <= options.Attempts; i++ {
 		// delay before every attempt
 		if verbosity > 0 {
 			logger.Printf("try %d: Sleep %d\n", i, options.Interval)
@@ -142,7 +142,6 @@ func reannounceUntilSeeds(ctx context.Context, logger *log.Logger, client *qbitt
 		found := false
 		for _, tr := range trackers {
 			logger.Printf("%s: u=\"%s\" status=%d peer=%d seed=%d leech=%d dl=%d msg=\"%s\"\n", t.Hash, tr.Url, tr.Status, tr.NumPeers, tr.NumSeeds, tr.NumLeechers, tr.NumDownloaded, tr.Message)
-			//fmt.Printf("%s: %v\n", t.Hash, tr)
 			if tr.Url == t.Tracker {
 				tracker = tr
 				found = true
@@ -157,6 +156,7 @@ func reannounceUntilSeeds(ctx context.Context, logger *log.Logger, client *qbitt
 		// if status not ok then reannounce
 		ok, _ := isTrackerStatusOK(trackers)
 		if !ok {
+			logger.Printf("%s: reannounce %d of %d\n", t.Hash, i, options.Attempts)
 			forceReannounce(ctx, logger, client, t)
 			continue
 		}
@@ -173,23 +173,23 @@ func reannounceUntilSeeds(ctx context.Context, logger *log.Logger, client *qbitt
 }
 
 func reannounceForGoodMeasure(ctx context.Context, logger *log.Logger, client *qbittorrent.Client, t qbittorrent.Torrent, options ReannounceOptions) {
-	for i := 0; i < options.ExtraAttempts; i++ {
+	for i := 1; i <= options.ExtraAttempts; i++ {
 		// delay before every attempt
 		if verbosity > 0 {
-			logger.Printf("extra %d: Sleep %d\n", i, options.ExtraInterval)
+			logger.Printf("%s: extra %d: Sleep %d\n", t.Hash, i, options.ExtraInterval)
 		}
 		time.Sleep(time.Duration(options.ExtraInterval) * time.Second)
 
 		// force reannounce
+		logger.Printf("%s: extra reannounce %d of %d\n", t.Hash, i, options.ExtraAttempts)
 		forceReannounce(ctx, logger, client, t)
 	}
 }
 
 func forceReannounce(ctx context.Context, logger *log.Logger, client *qbittorrent.Client, t qbittorrent.Torrent) {
-	logger.Printf("%s: Forcing reannounce\n", t.Hash)
-	// if err := client.ReAnnounceTorrentsCtx(ctx, []string{t.Hash}); err != nil {
-	// 	logger.Printf("%s: Error reannouncing: %s\n", t.Hash, err)
-	// }
+	if err := client.ReAnnounceTorrentsCtx(ctx, []string{t.Hash}); err != nil {
+		logger.Printf("%s: Error reannouncing: %s\n", t.Hash, err)
+	}
 }
 
 // Check if status not working or something else
