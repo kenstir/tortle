@@ -1,3 +1,5 @@
-.vscode
-*.exe
-torinfo.toml*
+/*.exe
+/*.toml
+/torinfo
+
+/.vscode
