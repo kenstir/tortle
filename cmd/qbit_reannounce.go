@@ -143,7 +143,7 @@ func reannounceUntilSeeded(ctx context.Context, client *qbittorrent.Client, hash
 		}
 
 		// if status not ok then reannounce
-		ok, tracker := isTrackerStatusOK(trackers)
+		ok, tracker := isTrackerStatusOK(trackers, hash)
 		if !ok {
 			stdoutLogger.Printf("%s: try %d: reannounce\n", hash, i)
 			forceReannounce(ctx, client, hash)
@@ -195,12 +195,20 @@ func forceReannounce(ctx context.Context, client *qbittorrent.Client, hash strin
 //	2 Tracker has been contacted and is working
 //	3 Tracker is updating
 //	4 Tracker has been contacted, but it is not working (or doesn't send proper replies)
-func isTrackerStatusOK(trackers []qbittorrent.TorrentTracker) (bool, qbittorrent.TorrentTracker) {
+func isTrackerStatusOK(trackers []qbittorrent.TorrentTracker, hash string) (bool, qbittorrent.TorrentTracker) {
+	// until I am confident in the logic below, print the status of every enabled tracker
+	for i, tr := range trackers {
+		if tr.Status == qbittorrent.TrackerStatusDisabled {
+			continue
+		}
+		stdoutLogger.Printf("%s: tr[%d] status=%s seed=%d peer=%d msg=\"%s\" u=\"%s\"\n", hash, i, trackerStatus(tr.Status), tr.NumSeeds, tr.NumPeers, tr.Message, tr.Url)
+	}
+
+	// find the first tracker with an OK status or an unregistered message
 	for _, tr := range trackers {
 		if tr.Status == qbittorrent.TrackerStatusDisabled {
 			continue
 		}
-		stdoutLogger.Printf("%40s: status=%s peer=%d seed=%d dl=%d msg=\"%s\" u=\"%s\"\n", "", trackerStatus(tr.Status), tr.NumPeers, tr.NumSeeds, tr.NumDownloaded, tr.Message, tr.Url)
 
 		// check for certain messages before the tracker status to catch ok status with unreg msg
 		if isUnregistered(tr.Message) {
