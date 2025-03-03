@@ -184,6 +184,9 @@ func forceReannounce(ctx context.Context, client *qbittorrent.Client, hash strin
 	}
 }
 
+// Stolen from https://github.com/autobrr/go-qbittorrent/blob/b355f45903eac9ae5b2a63cf2968d2347f1c888a/methods.go#L1318
+// and modified to return the tracker that is working
+//
 // Check if status not working or something else
 // https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#get-torrent-trackers
 //
