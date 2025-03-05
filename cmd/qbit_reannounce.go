@@ -109,7 +109,7 @@ func reannounce(ctx context.Context, client *qbittorrent.Client, hash string, op
 
 	// perform startup checks
 	age := time.Now().Unix() - torrent.AddedOn
-	stdoutLogger.Printf("%s: found torrent age=%d tracker=%s\n", hash, age, torrent.Tracker)
+	stdoutLogger.Printf("%s: found torrent age=%d\n", hash, age)
 	if age > int64(opts.MaxAge) {
 		stdoutLogger.Printf("%s: torrent is %ds old, max_age is %ds\n", hash, age, opts.MaxAge)
 		return
@@ -143,21 +143,15 @@ func reannounceUntilSeeded(ctx context.Context, client *qbittorrent.Client, hash
 		}
 
 		// if status not ok then reannounce
-		ok, tracker := isTrackerStatusOK(trackers, hash)
+		ok, seeds := findOKTrackerWithSeeds(trackers, hash)
 		if !ok {
 			stdoutLogger.Printf("%s: try %d: reannounce\n", hash, i)
 			forceReannounce(ctx, client, hash)
 			continue
 		}
 
-		// if we have seeds we're good, else reannounce
-		if tracker.NumSeeds > 0 {
-			return true
-		} else {
-			stdoutLogger.Printf("%s: try %d: reannounce\n", hash, i)
-			forceReannounce(ctx, client, hash)
-			continue
-		}
+		stdoutLogger.Printf("%s: try %d: found %d seeds\n", hash, i, seeds)
+		return true
 	}
 
 	stdoutLogger.Fatalf("%s: Reannounce attempts exhausted\n", hash)
@@ -184,10 +178,11 @@ func forceReannounce(ctx context.Context, client *qbittorrent.Client, hash strin
 	}
 }
 
-// Stolen from https://github.com/autobrr/go-qbittorrent/blob/b355f45903eac9ae5b2a63cf2968d2347f1c888a/methods.go#L1318
-// and modified to return the tracker that is working
+// Return true if a tracker is OK and has seeds
 //
-// Check if status not working or something else
+// Adapted from isTrackerStatusOK from https://github.com/autobrr/go-qbittorrent/
+// and modified to fit my needs
+//
 // https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#get-torrent-trackers
 //
 //	0 Tracker is disabled (used for DHT, PeX, and LSD)
@@ -195,7 +190,7 @@ func forceReannounce(ctx context.Context, client *qbittorrent.Client, hash strin
 //	2 Tracker has been contacted and is working
 //	3 Tracker is updating
 //	4 Tracker has been contacted, but it is not working (or doesn't send proper replies)
-func isTrackerStatusOK(trackers []qbittorrent.TorrentTracker, hash string) (bool, qbittorrent.TorrentTracker) {
+func findOKTrackerWithSeeds(trackers []qbittorrent.TorrentTracker, hash string) (bool, int) {
 	// until I am confident in the logic below, print the status of every enabled tracker
 	for i, tr := range trackers {
 		if tr.Status == qbittorrent.TrackerStatusDisabled {
@@ -205,23 +200,14 @@ func isTrackerStatusOK(trackers []qbittorrent.TorrentTracker, hash string) (bool
 		stdoutLogger.Printf("%s:        tr[%d] status=%s seed=%d peer=%d msg=\"%s\" u=%s\n", hash, i, trackerStatus(tr.Status), tr.NumSeeds, tr.NumPeers, tr.Message, hostname)
 	}
 
-	// find the first tracker with an OK status or an unregistered message
+	// find the first tracker with an OK status and seeds
 	for _, tr := range trackers {
-		if tr.Status == qbittorrent.TrackerStatusDisabled {
-			continue
-		}
-
-		// check for certain messages before the tracker status to catch ok status with unreg msg
-		if isUnregistered(tr.Message) {
-			return false, tr
-		}
-
-		if tr.Status == qbittorrent.TrackerStatusOK {
-			return true, tr
+		if tr.Status == qbittorrent.TrackerStatusOK && tr.NumSeeds > 0 {
+			return true, tr.NumSeeds
 		}
 	}
 
-	return false, qbittorrent.TorrentTracker{}
+	return false, -1
 }
 
 func isUnregistered(msg string) bool {
