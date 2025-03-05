@@ -26,10 +26,10 @@ This implementation differs from and I think improves on the autobrr builtin rea
 3. it iterates 2 extra times like the deluge-reannounce script.
 
 
-## Other implementations reviewed
+Other implementations reviewed:
 
 [^1]: [HBD script for "racing using Deluge"](https://docs.hostingby.design/application-hosting/applications/deluge#reannounce-script).  NB: Does not work with Deluge v2.1.1.
-[^2]: [go-qbittorrent](https://github.com/autobrr/go-qbittorrent)
-[^3]: [qbittools](https://gitlab.com/AlexKM/qbittools)
-[^4]: [qbittorrent-cli](https://github.com/ludviglundgren/qbittorrent-cli)
-[^5]: [qbtools](https://github.com/buroa/qbtools)
+[^2]: [go-qbittorrent](https://github.com/autobrr/go-qbittorrent/blob/main/methods.go) func `ReannounceTorrentWithRetry`
+[^3]: [qbittools](https://gitlab.com/AlexKM/qbittools/-/blob/master/commands/reannounce.py?ref_type=heads)
+[^4]: [qbittorrent-cli](https://github.com/ludviglundgren/qbittorrent-cli/blob/master/cmd/torrent_reannounce.go)
+[^5]: [qbtools](https://github.com/buroa/qbtools/blob/master/qbtools/commands/reannounce.py)
