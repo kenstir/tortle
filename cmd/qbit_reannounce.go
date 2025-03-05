@@ -201,7 +201,8 @@ func isTrackerStatusOK(trackers []qbittorrent.TorrentTracker, hash string) (bool
 		if tr.Status == qbittorrent.TrackerStatusDisabled {
 			continue
 		}
-		stdoutLogger.Printf("%s: tr[%d] status=%s seed=%d peer=%d msg=\"%s\" u=\"%s\"\n", hash, i, trackerStatus(tr.Status), tr.NumSeeds, tr.NumPeers, tr.Message, tr.Url)
+		hostname := strings.Split(tr.Url, "/")[2]
+		stdoutLogger.Printf("%s:        tr[%d] status=%s seed=%d peer=%d msg=\"%s\" u=%s\n", hash, i, trackerStatus(tr.Status), tr.NumSeeds, tr.NumPeers, tr.Message, hostname)
 	}
 
 	// find the first tracker with an OK status or an unregistered message
