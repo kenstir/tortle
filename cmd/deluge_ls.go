@@ -36,6 +36,7 @@ var delugeValidColumns = []string{
 	"completed",
 	"download_location",
 	"group",
+	"hash",
 	"name",
 	"ratio",
 	"save_path",
@@ -50,6 +51,7 @@ var delugeListCmd = &cobra.Command{
 		// get and check the flags
 		verbosity := viper.GetInt("verbose")
 		filter := viper.GetString("deluge.filter")
+		noheader := viper.GetBool("deluge.noheader")
 		columns := viper.GetStringSlice("deluge.columns")
 		for _, column := range columns {
 			if !slices.Contains(delugeValidColumns, column) {
@@ -114,7 +116,7 @@ var delugeListCmd = &cobra.Command{
 		})
 
 		// print as CSV
-		if !viper.GetBool("noheader") {
+		if !noheader {
 			header := strings.Join(columns, ",")
 			fmt.Printf("%s\n", header)
 		}
@@ -150,6 +152,10 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) 
 		return formatTimestamp(ts.CompletedTime)
 	case "download_location":
 		return ts.DownloadLocation
+	case "group":
+		return r.Group
+	case "hash":
+		return "TODO" //ts.Hash not exposed yet by go-deluge
 	case "name":
 		return ts.Name
 	case "ratio":
@@ -160,8 +166,6 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) 
 		return (time.Duration(ts.SeedingTime) * time.Second).String()
 	case "state":
 		return ts.State
-	case "group":
-		return r.Group
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}

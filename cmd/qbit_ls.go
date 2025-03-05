@@ -35,6 +35,7 @@ var qbitValidColumns = []string{
 	"completed",
 	"download_path",
 	"group",
+	"hash",
 	"name",
 	"ratio",
 	"save_path",
@@ -49,6 +50,7 @@ var qbitListCmd = &cobra.Command{
 		// get and check the flags
 		verbosity := viper.GetInt("verbose")
 		filter := viper.GetString("qbit.filter")
+		noheader := viper.GetBool("qbit.noheader")
 		columns := viper.GetStringSlice("qbit.columns")
 		for _, column := range columns {
 			if !slices.Contains(qbitValidColumns, column) {
@@ -93,7 +95,7 @@ var qbitListCmd = &cobra.Command{
 		}
 
 		// print as CSV
-		if !viper.GetBool("noheader") {
+		if !noheader {
 			header := strings.Join(columns, ",")
 			fmt.Printf("%s\n", header)
 		}
@@ -127,6 +129,10 @@ func formatColumn(column string, t qbittorrent.Torrent, r rls.Release) string {
 		return formatTimestamp(t.CompletionOn)
 	case "download_path":
 		return t.DownloadPath
+	case "group":
+		return r.Group
+	case "hash":
+		return t.Hash
 	case "name":
 		return t.Name
 	case "ratio":
@@ -137,8 +143,6 @@ func formatColumn(column string, t qbittorrent.Torrent, r rls.Release) string {
 		return (time.Duration(t.SeedingTime) * time.Second).String()
 	case "state":
 		return string(t.State)
-	case "group":
-		return r.Group
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}
