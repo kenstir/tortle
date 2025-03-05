@@ -25,8 +25,10 @@ This implementation differs from and I think improves on the autobrr builtin rea
 2. It iterates until the tracker is ok AND there are >0 seeds.
 3. it iterates 2 extra times like the deluge-reannounce script.
 
+I plan on adding tests for (2) once I figure out how to mock the go-qbittorrent API.  But in the logs I have seen where the tracker is OK but there are no seeds.  Based on my understanding of the tracker /announce API, it seems worthwhile to keep reannouncing.   Also, I have seen where 2 trackers are OK but only the 2nd one has seeds.  It seems worthwhile in that case to stop reannouncing every 7 seconds and proceed to the extra-reannounce every 30s phase.
 
-Other implementations reviewed:
+(3) seems the least well-reasoned, but this logic came from the HBD script for "racing using Deluge", it was duplicated in my Python fork, and it has never failed me.
+
 
 [^1]: [HBD script for "racing using Deluge"](https://docs.hostingby.design/application-hosting/applications/deluge#reannounce-script).  NB: Does not work with Deluge v2.1.1, so [key-str0ke created a Python script with the same logic](https://github.com/key-str0ke/deluge-reannounce) and I [forked it and added logging]https://github.com/kenstir/deluge-reannounce/).
 [^2]: [go-qbittorrent](https://github.com/autobrr/go-qbittorrent/blob/main/methods.go) func `ReannounceTorrentWithRetry`
