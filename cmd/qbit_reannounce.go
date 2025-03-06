@@ -13,6 +13,8 @@ import (
 	"github.com/autobrr/go-qbittorrent"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/kenstir/torinfo/internal"
 )
 
 type ReannounceOptions struct {
@@ -21,11 +23,6 @@ type ReannounceOptions struct {
 	ExtraAttempts int
 	ExtraInterval int
 	MaxAge        int
-}
-
-type ReannounceContext struct {
-	Client *qbittorrent.Client
-	Log    *log.Logger
 }
 
 func init() {
@@ -48,12 +45,12 @@ var qbitReannounceCmd = &cobra.Command{
 	Aliases: []string{"re", "fast_start", "faststart", "start"},
 	Short:   "Reannounce torrent",
 	Args:    cobra.ExactArgs(1),
-	Run:     reannounceCommandRun,
+	Run:     qbitReannounceCmdRun,
 }
 
 var stdoutLogger = log.New(os.Stdout, "", log.LstdFlags)
 
-func reannounceCommandRun(cmd *cobra.Command, args []string) {
+func qbitReannounceCmdRun(cmd *cobra.Command, args []string) {
 	// get the flags
 	verbosity := viper.GetInt("verbose")
 	hash := args[0]
@@ -67,7 +64,7 @@ func reannounceCommandRun(cmd *cobra.Command, args []string) {
 	if verbosity > 0 {
 		stdoutLogger.Printf("Connecting to %s as user %s\n", viper.GetString("qbit.server"), viper.GetString("qbit.username"))
 	}
-	client := qbittorrent.NewClient(qbittorrent.Config{
+	client := internal.NewQbitClient(qbittorrent.Config{
 		Host:     viper.GetString("qbit.server"),
 		Username: viper.GetString("qbit.username"),
 		Password: viper.GetString("qbit.password"),
@@ -81,10 +78,10 @@ func reannounceCommandRun(cmd *cobra.Command, args []string) {
 		ExtraInterval: extraInterval,
 		MaxAge:        maxAge,
 	}
-	reannounce(context.Background(), client, hash, options)
+	qbitReannounce(context.Background(), client, hash, options)
 }
 
-func reannounce(ctx context.Context, client *qbittorrent.Client, hash string, opts ReannounceOptions) {
+func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, opts ReannounceOptions) {
 
 	// connect
 	err := client.LoginCtx(ctx)
@@ -124,7 +121,7 @@ func reannounce(ctx context.Context, client *qbittorrent.Client, hash string, op
 	reannounceForGoodMeasure(ctx, client, hash, opts)
 }
 
-func reannounceUntilSeeded(ctx context.Context, client *qbittorrent.Client, hash string, options ReannounceOptions) bool {
+func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) bool {
 	for i := 1; i <= options.Attempts; i++ {
 		// delay before every attempt
 		if verbosity > 0 {
@@ -158,7 +155,7 @@ func reannounceUntilSeeded(ctx context.Context, client *qbittorrent.Client, hash
 	return false
 }
 
-func reannounceForGoodMeasure(ctx context.Context, client *qbittorrent.Client, hash string, options ReannounceOptions) {
+func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) {
 	for i := 1; i <= options.ExtraAttempts; i++ {
 		// delay before every attempt
 		if verbosity > 0 {
@@ -172,7 +169,7 @@ func reannounceForGoodMeasure(ctx context.Context, client *qbittorrent.Client, h
 	}
 }
 
-func forceReannounce(ctx context.Context, client *qbittorrent.Client, hash string) {
+func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string) {
 	if err := client.ReAnnounceTorrentsCtx(ctx, []string{hash}); err != nil {
 		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
 	}
