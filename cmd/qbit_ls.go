@@ -39,7 +39,9 @@ var qbitValidColumns = []string{
 	"group",
 	"hash",
 	"name",
+	// "next_announce", // for this we need to call GetTorrentPropertiesCtx
 	"ratio",
+	// "reannounce", // for this we need to call GetTorrentPropertiesCtx
 	"save_path",
 	"seed_time",
 	"state",

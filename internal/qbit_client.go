@@ -14,6 +14,7 @@ type QbitClientInterface interface {
 	LoginCtx(context.Context) error
 	GetTorrentsCtx(context.Context, qbittorrent.TorrentFilterOptions) ([]qbittorrent.Torrent, error)
 	GetTorrentTrackersCtx(context.Context, string) ([]qbittorrent.TorrentTracker, error)
+	GetTorrentPropertiesCtx(context.Context, string) (qbittorrent.TorrentProperties, error)
 	ReAnnounceTorrentsCtx(context.Context, []string) error
 }
 
@@ -38,6 +39,10 @@ func (qc *QbitClient) GetTorrentsCtx(ctx context.Context, filter qbittorrent.Tor
 
 func (qc *QbitClient) GetTorrentTrackersCtx(ctx context.Context, hash string) ([]qbittorrent.TorrentTracker, error) {
 	return qc.client.GetTorrentTrackersCtx(ctx, hash)
+}
+
+func (qc *QbitClient) GetTorrentPropertiesCtx(ctx context.Context, hash string) (qbittorrent.TorrentProperties, error) {
+	return qc.client.GetTorrentPropertiesCtx(ctx, hash)
 }
 
 func (qc *QbitClient) ReAnnounceTorrentsCtx(ctx context.Context, hashes []string) error {

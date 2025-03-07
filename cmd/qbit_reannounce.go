@@ -134,9 +134,11 @@ func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, ha
 
 func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
 	for i := 1; i <= options.Attempts; i++ {
+		prefix := fmt.Sprintf("try %d", i)
+
 		// delay before every attempt
 		if verbosity > 0 {
-			stdoutLogger.Printf("%s: try %d: Sleep %d\n", hash, i, options.Interval)
+			stdoutLogger.Printf("%s: %s: Sleep %d\n", hash, prefix, options.Interval)
 		}
 		time.Sleep(time.Duration(options.Interval) * time.Second)
 
@@ -146,19 +148,17 @@ func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterf
 			return err
 		}
 		if trackers == nil {
-			stdoutLogger.Printf("%s: try %d: no trackers\n", hash, i)
-			continue
+			return fmt.Errorf("%s: no trackers?", hash)
 		}
 
 		// if status not ok then reannounce
-		ok, seeds := findOKTrackerWithSeeds(trackers, hash)
+		ok, seeds := findOKTrackerWithSeeds(trackers, hash, prefix)
 		if !ok {
-			stdoutLogger.Printf("%s: try %d: reannounce\n", hash, i)
-			forceReannounce(ctx, client, hash)
+			forceReannounce(ctx, client, hash, prefix)
 			continue
 		}
 
-		stdoutLogger.Printf("%s: try %d: found %d seeds\n", hash, i, seeds)
+		stdoutLogger.Printf("%s: %s: torrent is OK with %d seeds\n", hash, prefix, seeds)
 		return nil
 	}
 
@@ -167,24 +167,43 @@ func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterf
 
 func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
 	for i := 1; i <= options.ExtraAttempts; i++ {
+		prefix := fmt.Sprintf("extra %d", i)
+
 		// delay before every attempt
 		if verbosity > 0 {
-			stdoutLogger.Printf("%s: extra %d: Sleep %d\n", hash, i, options.ExtraInterval)
+			stdoutLogger.Printf("%s: %s: sleep %d\n", hash, prefix, options.ExtraInterval)
 		}
 		time.Sleep(time.Duration(options.ExtraInterval) * time.Second)
 
 		// force reannounce
-		stdoutLogger.Printf("%s: extra reannounce %d of %d\n", hash, i, options.ExtraAttempts)
-		forceReannounce(ctx, client, hash)
+		forceReannounce(ctx, client, hash, prefix)
 	}
 
 	return nil
 }
 
-func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string) {
+func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
+	// hack: log reannounce interval before and after reannnouncing
+	logReannounceInterval(ctx, client, hash, prefix)
+
 	if err := client.ReAnnounceTorrentsCtx(ctx, []string{hash}); err != nil {
 		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
+	} else {
+		stdoutLogger.Printf("%s: %s: reannounced\n", hash, prefix)
 	}
+
+	// hack: log reannounce interval before and after reannnouncing
+	time.Sleep(10 * time.Second)
+	logReannounceInterval(ctx, client, hash, prefix)
+}
+
+func logReannounceInterval(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
+	props, err := client.GetTorrentPropertiesCtx(ctx, hash)
+	if err != nil {
+		stdoutLogger.Printf("%s: Error getting properties: %s\n", hash, err)
+	}
+	duration := time.Duration(props.Reannounce) * time.Second
+	stdoutLogger.Printf("%s: %s: reannounce is now %d (%s)\n", hash, prefix, props.Reannounce, duration.String())
 }
 
 // Return true if a tracker is OK and has seeds
@@ -199,14 +218,14 @@ func forceReannounce(ctx context.Context, client internal.QbitClientInterface, h
 //	2 Tracker has been contacted and is working
 //	3 Tracker is updating
 //	4 Tracker has been contacted, but it is not working (or doesn't send proper replies)
-func findOKTrackerWithSeeds(trackers []qbittorrent.TorrentTracker, hash string) (bool, int) {
+func findOKTrackerWithSeeds(trackers []qbittorrent.TorrentTracker, hash string, prefix string) (bool, int) {
 	// until I am confident in the logic below, print the status of every enabled tracker
 	for i, tr := range trackers {
 		if tr.Status == qbittorrent.TrackerStatusDisabled {
 			continue
 		}
 		hostname := strings.Split(tr.Url, "/")[2]
-		stdoutLogger.Printf("%s:        tr[%d] status=%s seed=%d peer=%d msg=\"%s\" u=%s\n", hash, i, trackerStatus(tr.Status), tr.NumSeeds, tr.NumPeers, tr.Message, hostname)
+		stdoutLogger.Printf("%s: %s: trackers[%d]: status=%s seed=%d peer=%d msg=\"%s\" u=%s\n", hash, prefix, i, trackerStatus(tr.Status), tr.NumSeeds, tr.NumPeers, tr.Message, hostname)
 	}
 
 	// find the first tracker with an OK status and seeds

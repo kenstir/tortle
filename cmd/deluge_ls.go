@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	deluge "github.com/autobrr/go-deluge"
+	"github.com/autobrr/go-deluge"
 	"github.com/moistari/rls"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -38,7 +38,9 @@ var delugeValidColumns = []string{
 	"group",
 	"hash",
 	"name",
+	"next_announce",
 	"ratio",
+	"reannounce",
 	"save_path",
 	"seed_time",
 	"state",
@@ -158,6 +160,8 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) 
 		return "TODO" //ts.Hash not exposed yet by go-deluge
 	case "name":
 		return ts.Name
+	case "next_announce", "reannounce":
+		return fmt.Sprintf("%d", ts.NextAnnounce)
 	case "ratio":
 		return fmt.Sprintf("%.1f", ts.Ratio)
 	case "save_path":
