@@ -154,7 +154,7 @@ func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterf
 		// if status not ok then reannounce
 		ok, seeds := findOKTrackerWithSeeds(trackers, hash, prefix)
 		if !ok {
-			forceReannounce(ctx, client, hash, prefix)
+			forceReannounce(ctx, client, hash, prefix, false)
 			continue
 		}
 
@@ -176,28 +176,30 @@ func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInt
 		time.Sleep(time.Duration(options.ExtraInterval) * time.Second)
 
 		// force reannounce
-		forceReannounce(ctx, client, hash, prefix)
+		forceReannounce(ctx, client, hash, prefix, true)
 	}
 
 	return nil
 }
 
-func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
+func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string, checkAgainAfter bool) {
 	// hack: log reannounce interval before and after reannnouncing
-	logReannounceInterval(ctx, client, hash, prefix)
+	logCurrentReannounceInterval(ctx, client, hash, prefix)
 
 	if err := client.ReAnnounceTorrentsCtx(ctx, []string{hash}); err != nil {
 		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
 	} else {
-		stdoutLogger.Printf("%s: %s: reannounced\n", hash, prefix)
+		stdoutLogger.Printf("%s: %s: reannounce sent\n", hash, prefix)
 	}
 
 	// hack: log reannounce interval before and after reannnouncing
-	time.Sleep(10 * time.Second)
-	logReannounceInterval(ctx, client, hash, prefix)
+	if checkAgainAfter {
+		time.Sleep(10 * time.Second)
+		logCurrentReannounceInterval(ctx, client, hash, prefix)
+	}
 }
 
-func logReannounceInterval(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
+func logCurrentReannounceInterval(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
 	props, err := client.GetTorrentPropertiesCtx(ctx, hash)
 	if err != nil {
 		stdoutLogger.Printf("%s: Error getting properties: %s\n", hash, err)
