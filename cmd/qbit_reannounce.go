@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -78,15 +79,18 @@ func qbitReannounceCmdRun(cmd *cobra.Command, args []string) {
 		ExtraInterval: extraInterval,
 		MaxAge:        maxAge,
 	}
-	qbitReannounce(context.Background(), client, hash, options)
+	err := qbitReannounce(context.Background(), client, hash, options)
+	if err != nil {
+		stdoutLogger.Fatal(err)
+	}
 }
 
-func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, opts ReannounceOptions) {
+func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, opts ReannounceOptions) error {
 
 	// connect
 	err := client.LoginCtx(ctx)
 	if err != nil {
-		stdoutLogger.Fatalf("Error connecting to qBittorrent: %s\n", err)
+		return err
 	}
 	if verbosity > 0 {
 		stdoutLogger.Printf("Connected to qBittorrent\n")
@@ -97,10 +101,10 @@ func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, ha
 		Hashes: []string{hash},
 	})
 	if err != nil {
-		stdoutLogger.Fatalf("Error getting torrents: %s\n", err.Error())
+		return err
 	}
 	if len(torrents) != 1 {
-		stdoutLogger.Fatalf("%s: torrent not found\n", hash)
+		return fmt.Errorf("%s: torrent not found", hash)
 	}
 	torrent := torrents[0]
 
@@ -108,8 +112,7 @@ func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, ha
 	age := time.Now().Unix() - torrent.AddedOn
 	stdoutLogger.Printf("%s: found torrent age=%d\n", hash, age)
 	if age > int64(opts.MaxAge) {
-		stdoutLogger.Printf("%s: torrent is %ds old, max_age is %ds\n", hash, age, opts.MaxAge)
-		return
+		return fmt.Errorf("%s: torrent is %ds old, max_age is %ds", hash, age, opts.MaxAge)
 	}
 	// if torrent.CompletionOn > 0 {
 	// 	stdoutLogger.Printf("%s: torrent is finished\n", hash)
@@ -117,11 +120,19 @@ func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, ha
 	// }
 
 	// reannounce
-	reannounceUntilSeeded(ctx, client, hash, opts)
-	reannounceForGoodMeasure(ctx, client, hash, opts)
+	err = reannounceUntilSeeded(ctx, client, hash, opts)
+	if err != nil {
+		return err
+	}
+	err = reannounceForGoodMeasure(ctx, client, hash, opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) bool {
+func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
 	for i := 1; i <= options.Attempts; i++ {
 		// delay before every attempt
 		if verbosity > 0 {
@@ -132,7 +143,7 @@ func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterf
 		// get trackers
 		trackers, err := client.GetTorrentTrackersCtx(ctx, hash)
 		if err != nil {
-			stdoutLogger.Fatal(err)
+			return err
 		}
 		if trackers == nil {
 			stdoutLogger.Printf("%s: try %d: no trackers\n", hash, i)
@@ -148,14 +159,13 @@ func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterf
 		}
 
 		stdoutLogger.Printf("%s: try %d: found %d seeds\n", hash, i, seeds)
-		return true
+		return nil
 	}
 
-	stdoutLogger.Fatalf("%s: Reannounce attempts exhausted\n", hash)
-	return false
+	return fmt.Errorf("%s: Reannounce attempts exhausted", hash)
 }
 
-func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) {
+func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
 	for i := 1; i <= options.ExtraAttempts; i++ {
 		// delay before every attempt
 		if verbosity > 0 {
@@ -167,6 +177,8 @@ func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInt
 		stdoutLogger.Printf("%s: extra reannounce %d of %d\n", hash, i, options.ExtraAttempts)
 		forceReannounce(ctx, client, hash)
 	}
+
+	return nil
 }
 
 func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string) {

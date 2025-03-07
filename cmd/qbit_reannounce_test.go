@@ -10,6 +10,24 @@ import (
 	"github.com/kenstir/torinfo/mocks"
 )
 
+func TestReannounce_TorrentNotFound(t *testing.T) {
+	mockClient := mocks.NewQbitMockClient()
+	ctx := context.Background()
+	hash := "404"
+	opts := ReannounceOptions{
+		Attempts: 1,
+	}
+
+	mockClient.On("LoginCtx", ctx).Return(nil)
+	mockClient.On("GetTorrentsCtx", ctx, qbittorrent.TorrentFilterOptions{Hashes: []string{hash}}).Return([]qbittorrent.Torrent{}, nil)
+
+	err := qbitReannounce(ctx, mockClient, hash, opts)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "torrent not found")
+
+	mockClient.AssertExpectations(t)
+}
+
 /*
 func TestReannounce(t *testing.T) {
 	mockClient := mocks.NewQbitMockClient()
@@ -45,24 +63,6 @@ func TestReannounce(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 */
-
-func TestReannounce_TorrentNotFound(t *testing.T) {
-	mockClient := mocks.NewQbitMockClient()
-	ctx := context.Background()
-	hash := "testhash"
-	opts := ReannounceOptions{
-		Attempts: 1,
-	}
-
-	mockClient.On("LoginCtx", ctx).Return(nil)
-	mockClient.On("GetTorrents", qbittorrent.TorrentFilterOptions{Hashes: []string{hash}}).Return([]qbittorrent.Torrent{}, nil)
-
-	assert.Panics(t, func() {
-		qbitReannounce(ctx, mockClient, hash, opts)
-	})
-
-	mockClient.AssertExpectations(t)
-}
 
 /*
 func TestReannounce_ErrorGettingTorrents(t *testing.T) {
