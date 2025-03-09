@@ -29,7 +29,7 @@ type ReannounceOptions struct {
 func init() {
 	qbitCmd.AddCommand(qbitReannounceCmd)
 
-	qbitReannounceCmd.Flags().IntP("attempts", "a", 128, "Number of reannounce attempts")
+	qbitReannounceCmd.Flags().IntP("attempts", "a", 60, "Number of reannounce attempts")
 	qbitReannounceCmd.Flags().IntP("interval", "i", 7, "Interval between reannounce attempts")
 	qbitReannounceCmd.Flags().IntP("extra_attempts", "A", 2, "Number of extra reannounce attempts")
 	qbitReannounceCmd.Flags().IntP("extra_interval", "I", 30, "Interval between extra reannounce attempts")
@@ -129,6 +129,9 @@ func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, ha
 		return err
 	}
 
+	// log final state
+	logTorrentProperties(ctx, client, hash, "final")
+
 	return nil
 }
 
@@ -154,7 +157,8 @@ func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterf
 		// if status not ok then reannounce
 		ok, seeds := findOKTrackerWithSeeds(trackers, hash, prefix)
 		if !ok {
-			forceReannounce(ctx, client, hash, prefix, false)
+			logTorrentProperties(ctx, client, hash, prefix)
+			forceReannounce(ctx, client, hash, prefix)
 			continue
 		}
 
@@ -175,27 +179,19 @@ func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInt
 		}
 		time.Sleep(time.Duration(options.ExtraInterval) * time.Second)
 
-		// force reannounce
-		forceReannounce(ctx, client, hash, prefix, true)
+		// log state then reannounce
+		logTorrentProperties(ctx, client, hash, prefix)
+		forceReannounce(ctx, client, hash, prefix)
 	}
 
 	return nil
 }
 
-func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string, checkAgainAfter bool) {
-	// hack: log reannounce interval before and after reannnouncing
-	logTorrentProperties(ctx, client, hash, prefix)
-
+func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
 	if err := client.ReAnnounceTorrentsCtx(ctx, []string{hash}); err != nil {
 		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
 	} else {
 		stdoutLogger.Printf("%s: %s: reannounce sent\n", hash, prefix)
-	}
-
-	// hack: log reannounce interval before and after reannnouncing
-	if checkAgainAfter {
-		time.Sleep(10 * time.Second)
-		logTorrentProperties(ctx, client, hash, prefix)
 	}
 }
 
