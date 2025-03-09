@@ -120,22 +120,22 @@ func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, ha
 	// }
 
 	// reannounce
-	err = reannounceUntilSeeded(ctx, client, hash, opts)
+	err = qbitReannounceUntilSeeded(ctx, client, hash, opts)
 	if err != nil {
 		return err
 	}
-	err = reannounceForGoodMeasure(ctx, client, hash, opts)
+	err = qbitReannounceForGoodMeasure(ctx, client, hash, opts)
 	if err != nil {
 		return err
 	}
 
 	// log final state
-	logTorrentProperties(ctx, client, hash, "final")
+	qbitLogTorrentProperties(ctx, client, hash, "final")
 
 	return nil
 }
 
-func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
+func qbitReannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
 	for i := 1; i <= options.Attempts; i++ {
 		prefix := fmt.Sprintf("try %d", i)
 
@@ -157,8 +157,8 @@ func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterf
 		// if status not ok then reannounce
 		ok, seeds := findOKTrackerWithSeeds(trackers, hash, prefix)
 		if !ok {
-			logTorrentProperties(ctx, client, hash, prefix)
-			forceReannounce(ctx, client, hash, prefix)
+			qbitLogTorrentProperties(ctx, client, hash, prefix)
+			qbitForceReannounce(ctx, client, hash, prefix)
 			continue
 		}
 
@@ -169,7 +169,7 @@ func reannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterf
 	return fmt.Errorf("%s: Reannounce attempts exhausted", hash)
 }
 
-func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
+func qbitReannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
 	for i := 1; i <= options.ExtraAttempts; i++ {
 		prefix := fmt.Sprintf("extra %d", i)
 
@@ -180,14 +180,14 @@ func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInt
 		time.Sleep(time.Duration(options.ExtraInterval) * time.Second)
 
 		// log state then reannounce
-		logTorrentProperties(ctx, client, hash, prefix)
-		forceReannounce(ctx, client, hash, prefix)
+		qbitLogTorrentProperties(ctx, client, hash, prefix)
+		qbitForceReannounce(ctx, client, hash, prefix)
 	}
 
 	return nil
 }
 
-func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
+func qbitForceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
 	if err := client.ReAnnounceTorrentsCtx(ctx, []string{hash}); err != nil {
 		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
 	} else {
@@ -195,7 +195,7 @@ func forceReannounce(ctx context.Context, client internal.QbitClientInterface, h
 	}
 }
 
-func logTorrentProperties(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
+func qbitLogTorrentProperties(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
 	props, err := client.GetTorrentPropertiesCtx(ctx, hash)
 	if err != nil {
 		stdoutLogger.Printf("%s: Error getting properties: %s\n", hash, err)

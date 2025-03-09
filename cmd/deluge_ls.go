@@ -88,16 +88,6 @@ var delugeListCmd = &cobra.Command{
 			fmt.Printf("Connected to deluge\n")
 		}
 
-		// methods, err := client.MethodsList(context.Background())
-		// if err != nil {
-		// 	fmt.Printf("Error getting methods: %s\n", err)
-		// 	os.Exit(1)
-		// }
-		// for _, method := range methods {
-		// 	fmt.Printf("%s\n", method)
-		// }
-		// fmt.Printf("Found %d methods\n", len(methods))
-
 		// get torrents
 		torrentsStatus, err := client.TorrentsStatus(context.Background(), deluge.StateUnspecified, nil)
 		if err != nil {
