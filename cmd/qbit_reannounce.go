@@ -29,7 +29,7 @@ type ReannounceOptions struct {
 func init() {
 	qbitCmd.AddCommand(qbitReannounceCmd)
 
-	qbitReannounceCmd.Flags().IntP("attempts", "a", 60, "Number of reannounce attempts")
+	qbitReannounceCmd.Flags().IntP("attempts", "a", 128, "Number of reannounce attempts")
 	qbitReannounceCmd.Flags().IntP("interval", "i", 7, "Interval between reannounce attempts")
 	qbitReannounceCmd.Flags().IntP("extra_attempts", "A", 2, "Number of extra reannounce attempts")
 	qbitReannounceCmd.Flags().IntP("extra_interval", "I", 30, "Interval between extra reannounce attempts")
@@ -184,7 +184,7 @@ func reannounceForGoodMeasure(ctx context.Context, client internal.QbitClientInt
 
 func forceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string, checkAgainAfter bool) {
 	// hack: log reannounce interval before and after reannnouncing
-	logCurrentReannounceInterval(ctx, client, hash, prefix)
+	logTorrentProperties(ctx, client, hash, prefix)
 
 	if err := client.ReAnnounceTorrentsCtx(ctx, []string{hash}); err != nil {
 		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
@@ -195,17 +195,17 @@ func forceReannounce(ctx context.Context, client internal.QbitClientInterface, h
 	// hack: log reannounce interval before and after reannnouncing
 	if checkAgainAfter {
 		time.Sleep(10 * time.Second)
-		logCurrentReannounceInterval(ctx, client, hash, prefix)
+		logTorrentProperties(ctx, client, hash, prefix)
 	}
 }
 
-func logCurrentReannounceInterval(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
+func logTorrentProperties(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
 	props, err := client.GetTorrentPropertiesCtx(ctx, hash)
 	if err != nil {
 		stdoutLogger.Printf("%s: Error getting properties: %s\n", hash, err)
 	}
 	duration := time.Duration(props.Reannounce) * time.Second
-	stdoutLogger.Printf("%s: %s: reannounce is now %d (%s)\n", hash, prefix, props.Reannounce, duration.String())
+	stdoutLogger.Printf("%s: %s: torrent: seed=%d peer=%d pieces=%d/%d(%d%%) reannounce=%d(%s)\n", hash, prefix, props.SeedsTotal, props.PeersTotal, props.PiecesHave, props.PiecesNum, int(100*props.PiecesHave/props.PiecesNum), props.Reannounce, duration.String())
 }
 
 // Return true if a tracker is OK and has seeds
