@@ -157,7 +157,7 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) 
 	case "group":
 		return r.Group
 	case "hash":
-		return "TODO" //ts.Hash not exposed yet by go-deluge
+		return ts.Hash
 	case "name":
 		return ts.Name
 	case "next_announce", "reannounce":

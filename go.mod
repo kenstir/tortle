@@ -3,7 +3,7 @@ module github.com/kenstir/torinfo
 go 1.23.4
 
 require (
-	github.com/autobrr/go-deluge v1.2.0
+	github.com/autobrr/go-deluge v1.3.0
 	github.com/autobrr/go-qbittorrent v1.11.0
 	github.com/moistari/rls v0.5.12
 	github.com/spf13/cobra v1.8.1

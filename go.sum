@@ -1,7 +1,7 @@
 github.com/Masterminds/semver v1.5.0 h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=
 github.com/Masterminds/semver v1.5.0/go.mod h1:MB6lktGJrhw8PrUyiEoblNEGEQ+RzHPF078ddwwvV3Y=
-github.com/autobrr/go-deluge v1.2.0 h1:psqHrH3nhriRAuxEiN8HpjH/2IW4DsNUxVavoqfi2xI=
-github.com/autobrr/go-deluge v1.2.0/go.mod h1:ndiXT1eHWv/ATNk9TpE8GHIs8OSSUnsImt4Syk+y5LM=
+github.com/autobrr/go-deluge v1.3.0 h1:c29FqwGdNJFIjGOQNuEn0uiIxoGxklbUmSJcKqGAdAI=
+github.com/autobrr/go-deluge v1.3.0/go.mod h1:ndiXT1eHWv/ATNk9TpE8GHIs8OSSUnsImt4Syk+y5LM=
 github.com/autobrr/go-qbittorrent v1.11.0 h1:Xmt28ECvZYDiamabEUtDZvJxiO/NaoGjJF4mHESDXq4=
 github.com/autobrr/go-qbittorrent v1.11.0/go.mod h1:sIwIdqDcFbN67tSC5p5Lp27M8/BQFoSoW5XqXyVdHF0=
 github.com/avast/retry-go v3.0.0+incompatible h1:4SOWQ7Qs+oroOTQOYnAHqelpCO0biHSxpiH9JdtuBj0=
