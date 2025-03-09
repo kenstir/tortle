@@ -1,5 +1,15 @@
+# exe and config
 /*.exe
 /*.toml
 /torinfo
 
+# junk
+/*.log
+
+# ide
 /.vscode
+
+# wip
+go-deluge
+go.work
+go.work.sum
