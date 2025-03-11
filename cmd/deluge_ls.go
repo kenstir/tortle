@@ -99,6 +99,7 @@ func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 	if verbosity > 0 {
 		stderrLogger.Printf("Connected to deluge\n")
 	}

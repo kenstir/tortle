@@ -84,6 +84,7 @@ func delugeReannounce(ctx context.Context, client deluge.DelugeClient, hash stri
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 	if verbosity > 0 {
 		stdoutLogger.Printf("Connected to deluge\n")
 	}
