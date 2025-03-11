@@ -47,18 +47,15 @@ var delugeValidColumns = []string{
 }
 
 var delugeListCmd = &cobra.Command{
-	Use:   "ls [hash]",
+	Use:   "ls [hash]...",
 	Short: "List torrents",
-	Args:  cobra.RangeArgs(0, 1),
 	Run:   delugeListCmdRun,
 }
 
 func delugeListCmdRun(cmd *cobra.Command, args []string) {
 	// get args
-	hash := ""
-	if len(args) > 0 {
-		hash = args[0]
-	}
+	var hashes []string
+	hashes = append(hashes, args...)
 
 	// get and check the flags
 	verbosity := viper.GetInt("verbose")
@@ -89,15 +86,16 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 	})
 
 	// list
-	err := delugeList(context.Background(), client, hash, filter, noheader, columns)
+	err := delugeList(context.Background(), client, hashes, filter, noheader, columns)
 	if err != nil {
-		stderrLogger.Fatal(err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 }
 
-func delugeList(ctx context.Context, client deluge.DelugeClient, hash, filter string, noheader bool, columns []string) error {
+func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string, filter string, noheader bool, columns []string) error {
 	// connect
-	err := client.Connect(context.Background())
+	err := client.Connect(ctx)
 	if err != nil {
 		return err
 	}
@@ -105,19 +103,25 @@ func delugeList(ctx context.Context, client deluge.DelugeClient, hash, filter st
 		stderrLogger.Printf("Connected to deluge\n")
 	}
 
-	// get torrents
-	var hashes []string
-	if hash != "" {
-		hashes = append(hashes, hash)
-	} else {
-		hashes = nil
+	// the `ids` argument to TorrentsStatus has to be nil to list all torrents
+	ids := hashes
+	if len(ids) == 0 {
+		ids = nil
 	}
-	torrentsStatus, err := client.TorrentsStatus(context.Background(), deluge.StateUnspecified, hashes)
+
+	// get torrents
+	torrentsStatus, err := client.TorrentsStatus(ctx, deluge.StateUnspecified, ids)
 	if err != nil {
 		return err
 	}
-	if hash != "" && len(torrentsStatus) == 0 {
-		return fmt.Errorf("%s: torrent not found", hash)
+
+	// check that all torrents were found
+	if len(hashes) > 0 && len(hashes) != len(torrentsStatus) {
+		for _, hash := range hashes {
+			if _, ok := torrentsStatus[hash]; !ok {
+				return fmt.Errorf("%s: torrent not found", hash)
+			}
+		}
 	}
 	if verbosity > 0 {
 		stderrLogger.Printf("Found %d torrents\n", len(torrentsStatus))
