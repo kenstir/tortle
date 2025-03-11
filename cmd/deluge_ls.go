@@ -47,12 +47,19 @@ var delugeValidColumns = []string{
 }
 
 var delugeListCmd = &cobra.Command{
-	Use:   "ls",
+	Use:   "ls [hash]",
 	Short: "List torrents",
+	Args:  cobra.RangeArgs(0, 1),
 	Run:   delugeListCmdRun,
 }
 
 func delugeListCmdRun(cmd *cobra.Command, args []string) {
+	// get args
+	hash := ""
+	if len(args) > 0 {
+		hash = args[0]
+	}
+
 	// get and check the flags
 	verbosity := viper.GetInt("verbose")
 	filter := viper.GetString("deluge.filter")
@@ -68,10 +75,10 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 
 	// create a deluge client
 	if verbosity > 0 {
-		fmt.Printf("server: %s\n", viper.GetString("deluge.server"))
-		fmt.Printf("port: %d\n", viper.GetUint("deluge.port"))
-		fmt.Printf("username: %s\n", viper.GetString("deluge.username"))
-		fmt.Printf("password: %s\n", viper.GetString("deluge.password"))
+		stderrLogger.Printf("server: %s\n", viper.GetString("deluge.server"))
+		stderrLogger.Printf("port: %d\n", viper.GetUint("deluge.port"))
+		stderrLogger.Printf("username: %s\n", viper.GetString("deluge.username"))
+		stderrLogger.Printf("password: %s\n", viper.GetString("deluge.password"))
 	}
 	client := deluge.NewV2(deluge.Settings{
 		Hostname:             viper.GetString("deluge.server"),
@@ -81,24 +88,39 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 		DebugServerResponses: true,
 	})
 
+	// list
+	err := delugeList(context.Background(), client, hash, filter, noheader, columns)
+	if err != nil {
+		stderrLogger.Fatal(err)
+	}
+}
+
+func delugeList(ctx context.Context, client deluge.DelugeClient, hash, filter string, noheader bool, columns []string) error {
 	// connect
 	err := client.Connect(context.Background())
 	if err != nil {
-		fmt.Printf("Error connecting to deluge: %s\n", err)
-		os.Exit(1)
+		return err
 	}
 	if verbosity > 0 {
-		fmt.Printf("Connected to deluge\n")
+		stderrLogger.Printf("Connected to deluge\n")
 	}
 
 	// get torrents
-	torrentsStatus, err := client.TorrentsStatus(context.Background(), deluge.StateUnspecified, nil)
+	var hashes []string
+	if hash != "" {
+		hashes = append(hashes, hash)
+	} else {
+		hashes = nil
+	}
+	torrentsStatus, err := client.TorrentsStatus(context.Background(), deluge.StateUnspecified, hashes)
 	if err != nil {
-		fmt.Printf("Error getting torrents status: %s\n", err)
-		os.Exit(1)
+		return err
+	}
+	if hash != "" && len(torrentsStatus) == 0 {
+		return fmt.Errorf("%s: torrent not found", hash)
 	}
 	if verbosity > 0 {
-		fmt.Printf("Found %d torrents\n", len(torrentsStatus))
+		stderrLogger.Printf("Found %d torrents\n", len(torrentsStatus))
 	}
 
 	// sort torrentsStatus by name
@@ -131,6 +153,8 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 		}
 		fmt.Printf("%s\n", strings.Join(line, ","))
 	}
+
+	return nil
 }
 
 // format the given column

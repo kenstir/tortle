@@ -42,7 +42,7 @@ func init() {
 }
 
 var qbitReannounceCmd = &cobra.Command{
-	Use:     "reannounce [hash]",
+	Use:     "reannounce hash",
 	Aliases: []string{"re", "fast_start", "faststart", "start"},
 	Short:   "Reannounce torrent",
 	Args:    cobra.ExactArgs(1),
@@ -50,6 +50,7 @@ var qbitReannounceCmd = &cobra.Command{
 }
 
 var stdoutLogger = log.New(os.Stdout, "", log.LstdFlags)
+var stderrLogger = log.New(os.Stderr, "", log.LstdFlags)
 
 func qbitReannounceCmdRun(cmd *cobra.Command, args []string) {
 	// get the flags

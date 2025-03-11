@@ -30,7 +30,7 @@ func init() {
 }
 
 var delugeReannounceCmd = &cobra.Command{
-	Use:     "reannounce [hash]",
+	Use:     "reannounce hash",
 	Aliases: []string{"re", "fast_start", "faststart", "start"},
 	Short:   "Reannounce torrent",
 	Args:    cobra.ExactArgs(1),
@@ -38,9 +38,10 @@ var delugeReannounceCmd = &cobra.Command{
 }
 
 func delugeReannounceCmdRun(cmd *cobra.Command, args []string) {
+	hash := args[0]
+
 	// get the flags
 	verbosity := viper.GetInt("verbose")
-	hash := args[0]
 	attempts := viper.GetInt("deluge.reannounce.attempts")
 	interval := viper.GetInt("deluge.reannounce.interval")
 	extraAttempts := viper.GetInt("deluge.reannounce.extra_attempts")
@@ -223,5 +224,5 @@ func delugeForceReannounce(ctx context.Context, client deluge.DelugeClient, hash
 func delugeLogTorrentStatus(ctx context.Context, ts *deluge.TorrentStatus, prefix string) {
 	duration := time.Duration(ts.NextAnnounce) * time.Second
 	progress := int(ts.Progress + 0.5)
-	stdoutLogger.Printf("%s: %s: torrent: seed=%d peer=%d progress=%d%% reannounce=%d(%s)\n", ts.Hash, prefix, ts.TotalSeeds, ts.TotalPeers, progress, ts.NextAnnounce, duration.String())
+	stdoutLogger.Printf("%s: %s: torrent: status=\"%s\" seeds=%d total_seeds=%d peer=%d progress=%d%% reannounce=%d(%s)\n", ts.Hash, prefix, ts.TrackerStatus, ts.NumSeeds, ts.TotalSeeds, ts.TotalPeers, progress, ts.NextAnnounce, duration.String())
 }
