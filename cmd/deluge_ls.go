@@ -72,10 +72,7 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 
 	// create a deluge client
 	if verbosity > 0 {
-		stderrLogger.Printf("server: %s\n", viper.GetString("deluge.server"))
-		stderrLogger.Printf("port: %d\n", viper.GetUint("deluge.port"))
-		stderrLogger.Printf("username: %s\n", viper.GetString("deluge.username"))
-		stderrLogger.Printf("password: %s\n", viper.GetString("deluge.password"))
+		stdoutLogger.Printf("Connecting to %s:%d as user %s\n", viper.GetString("deluge.server"), viper.GetUint("deluge.port"), viper.GetString("deluge.username"))
 	}
 	client := deluge.NewV2(deluge.Settings{
 		Hostname:             viper.GetString("deluge.server"),

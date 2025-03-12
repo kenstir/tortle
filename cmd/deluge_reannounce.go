@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -50,10 +51,7 @@ func delugeReannounceCmdRun(cmd *cobra.Command, args []string) {
 
 	// create a deluge client
 	if verbosity > 0 {
-		fmt.Printf("server: %s\n", viper.GetString("deluge.server"))
-		fmt.Printf("port: %d\n", viper.GetUint("deluge.port"))
-		fmt.Printf("username: %s\n", viper.GetString("deluge.username"))
-		fmt.Printf("password: %s\n", viper.GetString("deluge.password"))
+		stdoutLogger.Printf("Connecting to %s:%d as user %s\n", viper.GetString("deluge.server"), viper.GetUint("deluge.port"), viper.GetString("deluge.username"))
 	}
 	client := deluge.NewV2(deluge.Settings{
 		Hostname:             viper.GetString("deluge.server"),
@@ -73,7 +71,8 @@ func delugeReannounceCmdRun(cmd *cobra.Command, args []string) {
 	}
 	err := delugeReannounce(context.Background(), client, hash, options)
 	if err != nil {
-		stdoutLogger.Fatal(err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 }
 
