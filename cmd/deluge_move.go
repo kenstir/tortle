@@ -33,7 +33,6 @@ func delugeMoveCmdRun(cmd *cobra.Command, args []string) {
 	path := args[1]
 
 	// get the flags
-	verbosity := viper.GetInt("verbose")
 	force := viper.GetBool("deluge.move.force")
 
 	// OMG, msys does path conversion, turning "/a" into "c:/Program Files/Git/a".
@@ -49,16 +48,7 @@ func delugeMoveCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	// create a deluge client
-	if verbosity > 0 {
-		fmt.Printf("Connecting to %s:%d as user %s\n", viper.GetString("deluge.server"), viper.GetUint("deluge.port"), viper.GetString("deluge.username"))
-	}
-	client := deluge.NewV2(deluge.Settings{
-		Hostname:             viper.GetString("deluge.server"),
-		Port:                 viper.GetUint("deluge.port"),
-		Login:                viper.GetString("deluge.username"),
-		Password:             viper.GetString("deluge.password"),
-		DebugServerResponses: true,
-	})
+	client := delugeCreateV2Client()
 
 	// move
 	err := delugeMove(context.Background(), client, hash, path)

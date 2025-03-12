@@ -58,7 +58,6 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 	hashes = append(hashes, args...)
 
 	// get and check the flags
-	verbosity := viper.GetInt("verbose")
 	filter := viper.GetString("deluge.filter")
 	noheader := viper.GetBool("deluge.noheader")
 	columns := viper.GetStringSlice("deluge.columns")
@@ -71,16 +70,7 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	// create a deluge client
-	if verbosity > 0 {
-		stdoutLogger.Printf("Connecting to %s:%d as user %s\n", viper.GetString("deluge.server"), viper.GetUint("deluge.port"), viper.GetString("deluge.username"))
-	}
-	client := deluge.NewV2(deluge.Settings{
-		Hostname:             viper.GetString("deluge.server"),
-		Port:                 viper.GetUint("deluge.port"),
-		Login:                viper.GetString("deluge.username"),
-		Password:             viper.GetString("deluge.password"),
-		DebugServerResponses: true,
-	})
+	client := delugeCreateV2Client()
 
 	// list
 	err := delugeList(context.Background(), client, hashes, filter, noheader, columns)

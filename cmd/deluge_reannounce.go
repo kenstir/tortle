@@ -42,7 +42,6 @@ func delugeReannounceCmdRun(cmd *cobra.Command, args []string) {
 	hash := args[0]
 
 	// get the flags
-	verbosity := viper.GetInt("verbose")
 	attempts := viper.GetInt("deluge.reannounce.attempts")
 	interval := viper.GetInt("deluge.reannounce.interval")
 	extraAttempts := viper.GetInt("deluge.reannounce.extra_attempts")
@@ -50,16 +49,7 @@ func delugeReannounceCmdRun(cmd *cobra.Command, args []string) {
 	maxAge := viper.GetInt("deluge.reannounce.max_age")
 
 	// create a deluge client
-	if verbosity > 0 {
-		stdoutLogger.Printf("Connecting to %s:%d as user %s\n", viper.GetString("deluge.server"), viper.GetUint("deluge.port"), viper.GetString("deluge.username"))
-	}
-	client := deluge.NewV2(deluge.Settings{
-		Hostname:             viper.GetString("deluge.server"),
-		Port:                 viper.GetUint("deluge.port"),
-		Login:                viper.GetString("deluge.username"),
-		Password:             viper.GetString("deluge.password"),
-		DebugServerResponses: true,
-	})
+	client := delugeCreateV2Client()
 
 	// reannounce
 	options := ReannounceOptions{

@@ -4,6 +4,7 @@ Copyright © 2025 Kenneth H. Cox
 package cmd
 
 import (
+	"github.com/autobrr/go-deluge"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -28,4 +29,16 @@ var delugeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
+}
+
+func delugeCreateV2Client() *deluge.ClientV2 {
+	if viper.GetInt("verbose") > 0 {
+		stdoutLogger.Printf("Connecting to %s:%d as user %s\n", viper.GetString("deluge.server"), viper.GetInt("deluge.port"), viper.GetString("deluge.username"))
+	}
+	return deluge.NewV2(deluge.Settings{
+		Hostname: viper.GetString("deluge.server"),
+		Port:     uint(viper.GetInt("deluge.port")),
+		Login:    viper.GetString("deluge.username"),
+		Password: viper.GetString("deluge.password"),
+	})
 }
