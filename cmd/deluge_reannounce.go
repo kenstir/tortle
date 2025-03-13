@@ -62,7 +62,8 @@ func delugeReannounceCmdRun(cmd *cobra.Command, args []string) {
 	err := delugeReannounce(context.Background(), client, hash, options)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		os.Exit(0)
+		//os.Exit(1) // for now don't exit non-zero; is this why deluge is not saving a copy of .torrent files?
 	}
 }
 
@@ -78,24 +79,10 @@ func delugeReannounce(ctx context.Context, client deluge.DelugeClient, hash stri
 		stdoutLogger.Printf("Connected to deluge\n")
 	}
 
-	// get torrent status
-	ts, err := delugeGetTorrentStatus(ctx, client, hash)
-	if err != nil {
-		return err
-	}
+	// log something at startup
+	stdoutLogger.Printf("%s: Started\n", hash)
 
-	// perform startup checks
-	age := time.Now().Unix() - int64(ts.TimeAdded)
-	stdoutLogger.Printf("%s: found torrent age=%d\n", hash, age)
-	if age > int64(opts.MaxAge) {
-		return fmt.Errorf("%s: torrent is %ds old, max_age is %ds", hash, age, opts.MaxAge)
-	}
-	// if torrent.CompletionOn > 0 {
-	// 	stdoutLogger.Printf("%s: torrent is finished\n", hash)
-	// 	return
-	// }
-
-	// reannounce
+	// reannounce loops
 	err = delugeReannounceUntilSeeded(ctx, client, hash, opts)
 	if err != nil {
 		return err
@@ -106,7 +93,7 @@ func delugeReannounce(ctx context.Context, client deluge.DelugeClient, hash stri
 	}
 
 	// log final status
-	ts, err = delugeGetTorrentStatus(ctx, client, hash)
+	ts, err := delugeGetTorrentStatus(ctx, client, hash)
 	if err != nil {
 		return err
 	}
@@ -182,11 +169,11 @@ func delugeGetTorrentStatus(ctx context.Context, client deluge.DelugeClient, has
 	return torrentsStatus[hash], nil
 }
 
-// / delugeCheckStatus returns (skipReannounce, isOK)
+// delugeCheckStatus returns (skipReannounce, isOK)
 func delugeCheckStatus(ts *deluge.TorrentStatus) (bool, bool) {
 	msg := strings.ToLower(ts.TrackerStatus)
 
-	skipWords := []string{"announce set", "too many requests"}
+	skipWords := []string{"announce sent", "too many requests"}
 	for _, v := range skipWords {
 		if strings.Contains(msg, v) {
 			return true, false
