@@ -131,7 +131,8 @@ func delugeReannounceUntilSeeded(ctx context.Context, client deluge.DelugeClient
 		}
 	}
 
-	return fmt.Errorf("%s: Reannounce attempts exhausted", hash)
+	stdoutLogger.Printf("%s: Reannounce attempts exhausted", hash)
+	return nil
 }
 
 func delugeReannounceForGoodMeasure(ctx context.Context, client deluge.DelugeClient, hash string, options ReannounceOptions) error {
