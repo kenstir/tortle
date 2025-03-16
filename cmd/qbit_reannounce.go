@@ -49,8 +49,8 @@ var qbitReannounceCmd = &cobra.Command{
 	Run:     qbitReannounceCmdRun,
 }
 
-var stdoutLogger = log.New(os.Stdout, "", log.LstdFlags)
-var stderrLogger = log.New(os.Stderr, "", log.LstdFlags)
+var stdoutLogger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds)
+var stderrLogger = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 
 func qbitReannounceCmdRun(cmd *cobra.Command, args []string) {
 	// get the flags
