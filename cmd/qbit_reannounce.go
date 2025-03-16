@@ -192,7 +192,7 @@ func qbitForceReannounce(ctx context.Context, client internal.QbitClientInterfac
 	if err := client.ReAnnounceTorrentsCtx(ctx, []string{hash}); err != nil {
 		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
 	} else {
-		stdoutLogger.Printf("%s: %s: reannounce sent\n", hash, prefix)
+		stdoutLogger.Printf("%s: %s: reannounce requested\n", hash, prefix)
 	}
 }
 

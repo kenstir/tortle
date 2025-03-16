@@ -195,7 +195,7 @@ func delugeForceReannounce(ctx context.Context, client deluge.DelugeClient, hash
 	if err := client.ForceReannounce(ctx, []string{hash}); err != nil {
 		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
 	} else {
-		stdoutLogger.Printf("%s: %s: reannounce sent\n", hash, prefix)
+		stdoutLogger.Printf("%s: %s: reannounce requested\n", hash, prefix)
 	}
 }
 
