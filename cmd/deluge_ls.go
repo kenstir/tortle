@@ -117,7 +117,7 @@ func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string
 
 	// sort torrentsStatus by name
 	keys := make([]string, 0, len(torrentsStatus))
-	for key, _ := range torrentsStatus {
+	for key := range torrentsStatus {
 		keys = append(keys, key)
 	}
 	sort.Slice(keys, func(i, j int) bool {
