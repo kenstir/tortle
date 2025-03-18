@@ -32,8 +32,8 @@ func init() {
 
 var delugeReannounceCmd = &cobra.Command{
 	Use:     "reannounce hash",
-	Aliases: []string{"re", "fast_start", "faststart", "start"},
-	Short:   "Reannounce torrent",
+	Aliases: []string{"re", "reann", "faststart", "start"},
+	Short:   "Reannounce torrent until healthy",
 	Args:    cobra.ExactArgs(1),
 	Run:     delugeReannounceCmdRun,
 }
@@ -83,7 +83,7 @@ func delugeReannounce(ctx context.Context, client deluge.DelugeClient, hash stri
 	stdoutLogger.Printf("%s: Started\n", hash)
 
 	// reannounce loops
-	err = delugeReannounceUntilSeeded(ctx, client, hash, opts)
+	err = delugeReannounceUntilOK(ctx, client, hash, opts)
 	if err != nil {
 		return err
 	}
@@ -102,13 +102,13 @@ func delugeReannounce(ctx context.Context, client deluge.DelugeClient, hash stri
 	return nil
 }
 
-func delugeReannounceUntilSeeded(ctx context.Context, client deluge.DelugeClient, hash string, options ReannounceOptions) error {
+func delugeReannounceUntilOK(ctx context.Context, client deluge.DelugeClient, hash string, options ReannounceOptions) error {
 	for i := 1; i <= options.Attempts; i++ {
 		prefix := fmt.Sprintf("try %d", i)
 
 		// delay before every attempt
 		if verbosity > 0 {
-			stdoutLogger.Printf("%s: %s: Sleep %d\n", hash, prefix, options.Interval)
+			stdoutLogger.Printf("%s: %s: sleep %d\n", hash, prefix, options.Interval)
 		}
 		time.Sleep(time.Duration(options.Interval) * time.Second)
 
@@ -123,7 +123,7 @@ func delugeReannounceUntilSeeded(ctx context.Context, client deluge.DelugeClient
 		skipReannounce, ok := delugeCheckStatus(ts)
 		if skipReannounce {
 			stdoutLogger.Printf("%s: %s: skipping reannounce\n", hash, prefix)
-		} else if ok && (ts.NumSeeds > 0 || ts.TotalSeeds > 0) {
+		} else if ok {
 			stdoutLogger.Printf("%s: %s: torrent is OK with seeds=%d total_seeds=%d\n", hash, prefix, ts.NumSeeds, ts.TotalSeeds)
 			return nil
 		} else {

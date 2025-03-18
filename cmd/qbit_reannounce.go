@@ -43,8 +43,8 @@ func init() {
 
 var qbitReannounceCmd = &cobra.Command{
 	Use:     "reannounce hash",
-	Aliases: []string{"re", "fast_start", "faststart", "start"},
-	Short:   "Reannounce torrent",
+	Aliases: []string{"re", "reann", "faststart", "start"},
+	Short:   "Reannounce torrent until healthy",
 	Args:    cobra.ExactArgs(1),
 	Run:     qbitReannounceCmdRun,
 }
@@ -121,7 +121,7 @@ func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, ha
 	// }
 
 	// reannounce
-	err = qbitReannounceUntilSeeded(ctx, client, hash, opts)
+	err = qbitReannounceUntilOK(ctx, client, hash, opts)
 	if err != nil {
 		return err
 	}
@@ -136,13 +136,13 @@ func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, ha
 	return nil
 }
 
-func qbitReannounceUntilSeeded(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
+func qbitReannounceUntilOK(ctx context.Context, client internal.QbitClientInterface, hash string, options ReannounceOptions) error {
 	for i := 1; i <= options.Attempts; i++ {
 		prefix := fmt.Sprintf("try %d", i)
 
 		// delay before every attempt
 		if verbosity > 0 {
-			stdoutLogger.Printf("%s: %s: Sleep %d\n", hash, prefix, options.Interval)
+			stdoutLogger.Printf("%s: %s: sleep %d\n", hash, prefix, options.Interval)
 		}
 		time.Sleep(time.Duration(options.Interval) * time.Second)
 
@@ -156,7 +156,7 @@ func qbitReannounceUntilSeeded(ctx context.Context, client internal.QbitClientIn
 		}
 
 		// if status not ok then reannounce
-		ok, seeds := findOKTrackerWithSeeds(trackers, hash, prefix)
+		ok, seeds := findOKTracker(trackers, hash, prefix)
 		if !ok {
 			qbitLogTorrentProperties(ctx, client, hash, prefix)
 			qbitForceReannounce(ctx, client, hash, prefix)
@@ -205,7 +205,7 @@ func qbitLogTorrentProperties(ctx context.Context, client internal.QbitClientInt
 	stdoutLogger.Printf("%s: %s: torrent: seed=%d peer=%d pieces=%d/%d(%d%%) reannounce=%d(%s)\n", hash, prefix, props.SeedsTotal, props.PeersTotal, props.PiecesHave, props.PiecesNum, int(100*props.PiecesHave/props.PiecesNum), props.Reannounce, duration.String())
 }
 
-// Return true if a tracker is OK and has seeds
+// Return true if a tracker is OK
 //
 // Adapted from isTrackerStatusOK from https://github.com/autobrr/go-qbittorrent/
 // and modified to fit my needs
@@ -217,7 +217,7 @@ func qbitLogTorrentProperties(ctx context.Context, client internal.QbitClientInt
 //	2 Tracker has been contacted and is working
 //	3 Tracker is updating
 //	4 Tracker has been contacted, but it is not working (or doesn't send proper replies)
-func findOKTrackerWithSeeds(trackers []qbittorrent.TorrentTracker, hash string, prefix string) (bool, int) {
+func findOKTracker(trackers []qbittorrent.TorrentTracker, hash string, prefix string) (bool, int) {
 	// until I am confident in the logic below, print the status of every enabled tracker
 	for i, tr := range trackers {
 		if tr.Status == qbittorrent.TrackerStatusDisabled {
@@ -229,7 +229,7 @@ func findOKTrackerWithSeeds(trackers []qbittorrent.TorrentTracker, hash string, 
 
 	// find the first tracker with an OK status and seeds
 	for _, tr := range trackers {
-		if tr.Status == qbittorrent.TrackerStatusOK && tr.NumSeeds > 0 {
+		if tr.Status == qbittorrent.TrackerStatusOK {
 			return true, tr.NumSeeds
 		}
 	}
@@ -237,20 +237,7 @@ func findOKTrackerWithSeeds(trackers []qbittorrent.TorrentTracker, hash string, 
 	return false, -1
 }
 
-func isUnregistered(msg string) bool {
-	words := []string{"unregistered", "not registered", "not found", "not exist"}
-
-	msg = strings.ToLower(msg)
-
-	for _, v := range words {
-		if strings.Contains(msg, v) {
-			return true
-		}
-	}
-
-	return false
-}
-
+// trackerStatus returns a string representation of the tracker status
 func trackerStatus(s qbittorrent.TrackerStatus) string {
 	switch s {
 	case qbittorrent.TrackerStatusDisabled:
