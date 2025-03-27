@@ -1,4 +1,4 @@
-# tortle - like qbittools but for Deluge and qBittorrent
+# tortle - torrent tool, like qbittools but for Deluge and qBittorrent
 
 I started tortle (`tt`) as a way to list the contents of Deluge server or qBittorrent server using Golang APIs and Cobra/Viper, and that became:
 
