@@ -16,8 +16,8 @@ var verbosity int
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "torinfo",
-	Short: "Query torrent info",
+	Use:   "tt",
+	Short: "tt (torrent tool or tortle) is a tool for querying Deluge or qBittorrent",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -32,7 +32,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./torinfo.toml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./tt.toml)")
 
 	rootCmd.PersistentFlags().CountVarP(&verbosity, "verbose", "v", "Increase verbosity (may be specified multiple times)")
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
@@ -44,10 +44,10 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Use ./torinfo.toml
+		// Use ./tt.toml or $HOME/tt.toml
 		viper.AddConfigPath(".")
 		viper.AddConfigPath("$HOME")
-		viper.SetConfigName("torinfo")
+		viper.SetConfigName("tt")
 		viper.SetConfigType("toml")
 	}
 

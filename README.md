@@ -1,6 +1,6 @@
-# tortool - like qbittools but for Deluge and qBittorrent
+# tortle - like qbittools but for Deluge and qBittorrent
 
-I started tortool (`tt`) as a way to list the contents of Deluge server or qBittorrent server using Golang APIs and Cobra/Viper, and that became:
+I started tortle (`tt`) as a way to list the contents of Deluge server or qBittorrent server using Golang APIs and Cobra/Viper, and that became:
 
 ```
 tt deluge ls --columns=ratio,name
@@ -17,7 +17,7 @@ Maybe there will be other subcommands in the future, maybe not.
 
 ## Why another reannounce script?
 
-Short answer: because using the autobrr builtin reannounce feature [breaks Skip Duplicates](https://discord.com/channels/881212911849209957/881967548143403058/1342160196276977725).  I would have grabbed an existing script, but thier logic didn't agree with the gold standard HBD script[^1], and none of the ones I looked at [^2],[^3],[^4],[^5] logged all the detail I needed to understand what was going on.
+Short answer: because the autobrr builtin reannounce feature [breaks Skip Duplicates](https://discord.com/channels/881212911849209957/881967548143403058/1342160196276977725).  I would have grabbed an existing script, but thier logic didn't agree with the gold standard HBD script[^1], and none of the ones I looked at [^2],[^3],[^4],[^5] logged all the detail I needed to understand what was going on.
 
 This implementation differs from and I think improves on the autobrr builtin reannounce in the following ways:
 

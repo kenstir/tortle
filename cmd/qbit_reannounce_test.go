@@ -7,7 +7,7 @@ import (
 	"github.com/autobrr/go-qbittorrent"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kenstir/torinfo/mocks"
+	"github.com/kenstir/tortle/mocks"
 )
 
 func TestReannounce_TorrentNotFound(t *testing.T) {

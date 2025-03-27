@@ -1,2 +1,2 @@
 #!/bin/sh
-GOOS=linux GOARCH=amd64 go build -o torinfo
+GOOS=linux GOARCH=amd64 go build -o tt

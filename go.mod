@@ -1,4 +1,4 @@
-module github.com/kenstir/torinfo
+module github.com/kenstir/tortle
 
 go 1.23.4
 

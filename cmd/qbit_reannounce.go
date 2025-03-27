@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/kenstir/torinfo/internal"
+	"github.com/kenstir/tortle/internal"
 )
 
 type ReannounceOptions struct {
