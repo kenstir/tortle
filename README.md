@@ -1,16 +1,16 @@
-# torinfo - like qbittools but for Deluge and qBittorrent
+# tortool - like qbittools but for Deluge and qBittorrent
 
-I started `torinfo` as a way to list the contents of Deluge server or qBittorrent server using Golang APIs and Cobra/Viper, and that became:
+I started tortool (`tt`) as a way to list the contents of Deluge server or qBittorrent server using Golang APIs and Cobra/Viper, and that became:
 
 ```
-torinfo deluge ls --columns=ratio,name
-torinfo qbit ls --columns=ratio,name
+tt deluge ls --columns=ratio,name
+tt qbit ls --columns=ratio,name
 ```
 
 Then I discovered that none of the qbit "reannounce scripts" worked like I thought they should, and that became:
 
 ```
-torinfo qbit reannounce [hash]
+tt qbit reannounce [hash]
 ```
 
 Maybe there will be other subcommands in the future, maybe not.
@@ -22,13 +22,13 @@ Short answer: because using the autobrr builtin reannounce feature [breaks Skip 
 This implementation differs from and I think improves on the autobrr builtin reannounce in the following ways:
 
 1. It runs separate from the autobrr hook, so the hook is free to move on and write the release status so that Skip Duplicates has a better chance of working.
-2. It iterates until the tracker is ok AND there are >0 seeds.
-3. it iterates 2 extra times like the deluge-reannounce script.
-
-I plan on adding tests for (2) once I figure out how to mock the go-qbittorrent API.  But in the logs I have seen where the tracker is OK but there are no seeds.  Based on my understanding of the tracker /announce API, it seems worthwhile to keep reannouncing.   Also, I have seen where 2 trackers are OK but only the 2nd one has seeds.  It seems worthwhile in that case to stop reannouncing every 7 seconds and proceed to the extra-reannounce every 30s phase.
+2. It logs verbosely exactly what it is seeing and doing.
+3. It iterates 2 extra times like the deluge-reannounce script.
 
 (3) seems the least well-reasoned, but this logic came from the HBD script for "racing using Deluge", it was duplicated in my Python fork, and it has never failed me.
 
+Based on my experience with this script and instrumenting the deluge code, I now see that (3) is totally unnecessary, and yet I have not removed it.
+[Libtorrent does not immediately announce when you call force_reannounce](https://github.com/arvidn/libtorrent/blob/1b9dc7462f22bc1513464d01c72281280a6a5f97/include/libtorrent/torrent_handle.hpp#L1162-L1169).
 
 [^1]: [HBD script for "racing using Deluge"](https://docs.hostingby.design/application-hosting/applications/deluge#reannounce-script).  NB: Does not work with Deluge v2.1.1, so [key-str0ke created a Python script with the same logic](https://github.com/key-str0ke/deluge-reannounce) and I [forked it and added logging]https://github.com/kenstir/deluge-reannounce/).
 [^2]: [go-qbittorrent](https://github.com/autobrr/go-qbittorrent/blob/main/methods.go) func `ReannounceTorrentWithRetry`
