@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/autobrr/go-deluge"
@@ -70,12 +69,6 @@ func delugeStats(ctx context.Context, client deluge.DelugeClient) error {
 	}
 	now := time.Now().Unix()
 
-	// output in InfluxDB line protocol format
-	fmt.Printf("tt,%s %s %d\n",
-		strings.Join(tags, ","),
-		strings.Join(fields, ","),
-		now,
-	)
-
+	printMeasurement("tt_stats", tags, fields, now)
 	return nil
 }

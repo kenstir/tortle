@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/kenstir/tortle/internal"
@@ -65,18 +64,12 @@ func qbitStats(ctx context.Context, client internal.QbitClientInterface) error {
 	}
 	fields := []string{
 		fmt.Sprintf("download_rate=%d", info.DlInfoSpeed),
-		fmt.Sprintf("upload_rate=%.d", info.UpInfoSpeed),
+		fmt.Sprintf("upload_rate=%d", info.UpInfoSpeed),
 		fmt.Sprintf("total_download=%du", info.DlInfoData),
 		fmt.Sprintf("total_upload=%du", info.UpInfoData),
 	}
 	now := time.Now().Unix()
 
-	// output in InfluxDB line protocol format
-	fmt.Printf("tt,%s %s %d\n",
-		strings.Join(tags, ","),
-		strings.Join(fields, ","),
-		now,
-	)
-
+	printMeasurement("tt_stats", tags, fields, now)
 	return nil
 }
