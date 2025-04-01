@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,8 +45,12 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Use ./tt.toml or $HOME/tt.toml
+		// Use tt.toml from ., exe_dir, or $HOME
 		viper.AddConfigPath(".")
+		if exePath, err := os.Executable(); err == nil {
+			exeDir := filepath.Dir(exePath)
+			viper.AddConfigPath(exeDir)
+		}
 		viper.AddConfigPath("$HOME")
 		viper.SetConfigName("tt")
 		viper.SetConfigType("toml")
