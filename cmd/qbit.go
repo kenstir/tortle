@@ -26,7 +26,7 @@ func init() {
 
 var qbitCmd = &cobra.Command{
 	Use:     "qbit",
-	Aliases: []string{"q", "qb"},
+	Aliases: []string{"q", "qb", "qbittorrent"},
 	Short:   "Manage a qBittorrent server",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
