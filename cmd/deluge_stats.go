@@ -53,9 +53,9 @@ func delugeStats(ctx context.Context, client deluge.DelugeClient) error {
 	// organize data into tags and fields
 	// See also https://docs.influxdata.com/influxdb/v1/write_protocols/line_protocol_tutorial/
 	tags := []string{
-		"client=deluge",
-		fmt.Sprintf("host=%s", viper.GetString("deluge.server")),
-		fmt.Sprintf("port=%d", viper.GetInt("deluge.port")),
+		"client_type=deluge",
+		fmt.Sprintf("client_host=%s", viper.GetString("deluge.server")),
+		fmt.Sprintf("client_port=%d", viper.GetInt("deluge.port")),
 	}
 	fields := []string{
 		// Seems nobody wants to see DownloadRate and UploadRate;
