@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/autobrr/go-deluge"
 	"github.com/spf13/cobra"
@@ -67,8 +66,7 @@ func delugeStats(ctx context.Context, client deluge.DelugeClient) error {
 		fmt.Sprintf("total_download=%du", status.TotalDownload),
 		fmt.Sprintf("total_upload=%du", status.TotalUpload),
 	}
-	now := time.Now().Unix()
 
-	printMeasurement("tt_stats", tags, fields, now)
+	printMeasurement("tt_stats", tags, fields)
 	return nil
 }

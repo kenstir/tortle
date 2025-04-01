@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/kenstir/tortle/internal"
 	"github.com/spf13/cobra"
@@ -58,9 +57,9 @@ func qbitStats(ctx context.Context, client internal.QbitClientInterface) error {
 		return err
 	}
 	tags := []string{
-		"client=qbittorrent",
-		fmt.Sprintf("host=%s", host),
-		fmt.Sprintf("port=%s", port),
+		"client_type=qbittorrent",
+		fmt.Sprintf("client_host=%s", host),
+		fmt.Sprintf("client_port=%s", port),
 	}
 	fields := []string{
 		fmt.Sprintf("download_rate=%d", info.DlInfoSpeed),
@@ -68,8 +67,7 @@ func qbitStats(ctx context.Context, client internal.QbitClientInterface) error {
 		fmt.Sprintf("total_download=%du", info.DlInfoData),
 		fmt.Sprintf("total_upload=%du", info.UpInfoData),
 	}
-	now := time.Now().Unix()
 
-	printMeasurement("tt_stats", tags, fields, now)
+	printMeasurement("tt_stats", tags, fields)
 	return nil
 }

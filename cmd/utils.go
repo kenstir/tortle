@@ -17,7 +17,8 @@ func formatTimestamp(timestamp int64) string {
 }
 
 // print a line of data in InfluxDB line protocol format
-func printMeasurement(measurement string, tags []string, fields []string, timestamp int64) {
+func printMeasurement(measurement string, tags []string, fields []string) {
+	timestamp := time.Now().UnixNano()
 	fmt.Printf("%s,%s %s %d\n",
 		measurement,
 		strings.Join(tags, ","),
