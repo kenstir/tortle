@@ -9,7 +9,8 @@
 # ide
 /.vscode
 
-# wip
+# wip - go workspace
 go-deluge
+go-qbittorrent
 go.work
 go.work.sum

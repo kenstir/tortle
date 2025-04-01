@@ -54,7 +54,6 @@ var stderrLogger = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 
 func qbitReannounceCmdRun(cmd *cobra.Command, args []string) {
 	// get the flags
-	verbosity := viper.GetInt("verbose")
 	hash := args[0]
 	attempts := viper.GetInt("qbit.reannounce.attempts")
 	interval := viper.GetInt("qbit.reannounce.interval")
@@ -63,14 +62,7 @@ func qbitReannounceCmdRun(cmd *cobra.Command, args []string) {
 	maxAge := viper.GetInt("qbit.reannounce.max_age")
 
 	// create a qbit client
-	if verbosity > 0 {
-		stdoutLogger.Printf("Connecting to %s as user %s\n", viper.GetString("qbit.server"), viper.GetString("qbit.username"))
-	}
-	client := internal.NewQbitClient(qbittorrent.Config{
-		Host:     viper.GetString("qbit.server"),
-		Username: viper.GetString("qbit.username"),
-		Password: viper.GetString("qbit.password"),
-	})
+	client := qbitCreateClient()
 
 	// reannounce
 	options := ReannounceOptions{

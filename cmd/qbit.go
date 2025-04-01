@@ -4,8 +4,13 @@ Copyright © 2025 Kenneth H. Cox
 package cmd
 
 import (
+	"net/url"
+
+	"github.com/autobrr/go-qbittorrent"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/kenstir/tortle/internal"
 )
 
 func init() {
@@ -26,4 +31,25 @@ var qbitCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
+}
+
+func qbitCreateClient() *internal.QbitClient {
+	if viper.GetInt("verbose") > 0 {
+		stdoutLogger.Printf("Connecting to %s as user %s\n", viper.GetString("qbit.server"), viper.GetString("qbit.username"))
+	}
+	return internal.NewQbitClient(qbittorrent.Config{
+		Host:     viper.GetString("qbit.server"),
+		Username: viper.GetString("qbit.username"),
+		Password: viper.GetString("qbit.password"),
+	})
+}
+
+func qbitGetHostPort() (string, string, error) {
+	server := viper.GetString("qbit.server")
+	u, err := url.Parse(server)
+	if err != nil {
+		return "", "", err
+	}
+
+	return u.Hostname(), u.Port(), nil
 }
