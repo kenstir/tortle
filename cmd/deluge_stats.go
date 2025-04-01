@@ -59,10 +59,12 @@ func delugeStats(ctx context.Context, client deluge.DelugeClient) error {
 		fmt.Sprintf("port=%d", viper.GetInt("deluge.port")),
 	}
 	fields := []string{
-		fmt.Sprintf("download_rate=%.1f", status.DownloadRate),
-		fmt.Sprintf("upload_rate=%.1f", status.UploadRate),
-		fmt.Sprintf("payload_download_rate=%.1f", status.PayloadDownloadRate),
-		fmt.Sprintf("payload_upload_rate=%.1f", status.PayloadUploadRate),
+		// Seems nobody wants to see DownloadRate and UploadRate;
+		// PayloadDownloadRate and PayloadUploadRate are the ones shown in the GUI
+		// fmt.Sprintf("download_rate=%.1f", status.DownloadRate),
+		// fmt.Sprintf("upload_rate=%.1f", status.UploadRate),
+		fmt.Sprintf("download_rate=%.1f", status.PayloadDownloadRate),
+		fmt.Sprintf("upload_rate=%.1f", status.PayloadUploadRate),
 		fmt.Sprintf("total_download=%du", status.TotalDownload),
 		fmt.Sprintf("total_upload=%du", status.TotalUpload),
 	}
