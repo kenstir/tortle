@@ -36,6 +36,7 @@ var qbitValidColumns = []string{
 	"channels",
 	"completed",
 	"download_path",
+	"downloaded",
 	"group",
 	"hash",
 	"name",
@@ -45,15 +46,20 @@ var qbitValidColumns = []string{
 	"save_path",
 	"seed_time",
 	"state",
+	"uploaded",
 }
 
 var qbitListCmd = &cobra.Command{
-	Use:   "ls",
+	Use:   "ls [hash]...",
 	Short: "List torrents",
 	Run:   qbitListCmdRun,
 }
 
 func qbitListCmdRun(cmd *cobra.Command, args []string) {
+	// get args
+	var hashes []string
+	hashes = append(hashes, args...)
+
 	// get and check the flags
 	verbosity := viper.GetInt("verbose")
 	filter := viper.GetString("qbit.filter")
@@ -68,40 +74,48 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	// create a qbit client
-	if verbosity > 0 {
-		fmt.Printf("Connecting to %s as user %s\n", viper.GetString("qbit.server"), viper.GetString("qbit.username"))
-	}
-	client := internal.NewQbitClient(qbittorrent.Config{
-		Host:     viper.GetString("qbit.server"),
-		Username: viper.GetString("qbit.username"),
-		Password: viper.GetString("qbit.password"),
-	})
+	client := qbitCreateClient()
 
-	qbitList(context.Background(), client, verbosity, columns, filter, noheader)
+	err := qbitList(context.Background(), client, hashes, verbosity, columns, filter, noheader)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
 }
 
-func qbitList(ctx context.Context, client *internal.QbitClient, verbosity int, columns []string, filter string, noheader bool) {
-
+func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes []string, verbosity int, columns []string, filter string, noheader bool) error {
 	// connect
 	err := client.LoginCtx(context.Background())
 	if err != nil {
-		fmt.Printf("Error connecting to qBittorrent: %s\n", err)
-		os.Exit(1)
-	}
-	if verbosity > 0 {
-		fmt.Printf("Connected to qBittorrent\n")
+		return err
 	}
 
 	// get torrents
 	torrents, err := client.GetTorrentsCtx(ctx, qbittorrent.TorrentFilterOptions{
-		Sort: "name",
+		Sort:   "name",
+		Hashes: hashes,
 	})
 	if err != nil {
-		fmt.Printf("Error getting torrents: %s\n", err.Error())
-		os.Exit(1)
+		return err
+	}
+
+	// check that all specified torrents were found
+	if len(hashes) > 0 && len(hashes) != len(torrents) {
+		for _, hash := range hashes {
+			found := false
+			for _, t := range torrents {
+				if t.Hash == hash {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("%s: torrent not found", hash)
+			}
+		}
 	}
 	if verbosity > 0 {
-		fmt.Fprintf(os.Stderr, "Found %d torrents\n", len(torrents))
+		stderrLogger.Printf("Found %d torrents\n", len(torrents))
 	}
 
 	// print as CSV
@@ -119,14 +133,16 @@ func qbitList(ctx context.Context, client *internal.QbitClient, verbosity int, c
 		var line []string
 		r := rls.ParseString(t.Name)
 		for _, column := range columns {
-			line = append(line, formatColumn(column, t, r))
+			line = append(line, qbitFormatColumn(column, t, r))
 		}
 		fmt.Printf("%s\n", strings.Join(line, ","))
 	}
+
+	return nil
 }
 
 // format the given column
-func formatColumn(column string, t qbittorrent.Torrent, r rls.Release) string {
+func qbitFormatColumn(column string, t qbittorrent.Torrent, r rls.Release) string {
 	switch column {
 	case "added":
 		return formatTimestamp(int64(t.AddedOn))
@@ -138,6 +154,8 @@ func formatColumn(column string, t qbittorrent.Torrent, r rls.Release) string {
 		return formatTimestamp(t.CompletionOn)
 	case "download_path":
 		return t.DownloadPath
+	case "downloaded":
+		return humanizeBytes(t.Downloaded)
 	case "group":
 		return r.Group
 	case "hash":
@@ -152,6 +170,8 @@ func formatColumn(column string, t qbittorrent.Torrent, r rls.Release) string {
 		return (time.Duration(t.SeedingTime) * time.Second).String()
 	case "state":
 		return string(t.State)
+	case "uploaded":
+		return humanizeBytes(t.Uploaded)
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}

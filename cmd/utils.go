@@ -26,3 +26,30 @@ func printMeasurement(measurement string, tags []string, fields []string) {
 		timestamp,
 	)
 }
+
+func humanizeBytes(bytes int64) string {
+	const (
+		_ = 1 << (10 * iota)
+		KB
+		MB
+		GB
+		TB
+		PB
+	)
+	// x := fmt.Sprintf("KB=%d MB=%d GB=%d TB=%d PB=%d", KB, MB, GB, TB, PB)
+	// fmt.Println(x)
+	switch {
+	case bytes >= PB:
+		return fmt.Sprintf("%.2f PiB", float64(bytes)/PB)
+	case bytes >= TB:
+		return fmt.Sprintf("%.2f TiB", float64(bytes)/TB)
+	case bytes >= GB:
+		return fmt.Sprintf("%.2f GiB", float64(bytes)/GB)
+	case bytes >= MB:
+		return fmt.Sprintf("%.2f MiB", float64(bytes)/MB)
+	case bytes >= KB:
+		return fmt.Sprintf("%.2f KiB", float64(bytes)/KB)
+	default:
+		return fmt.Sprintf("%d B", bytes)
+	}
+}
