@@ -1,17 +1,17 @@
 ifneq (,$(filter $(OS),Windows_NT Windows))
-	EXEEXT=.exe
+	EXE=.exe
 endif
 
-TARGET_WITH_EXT=tt${EXEEXT}
-TARGET_NO_EXT=tt
+LOCAL_TARGET=tt${EXE}
+LINUX_TARGET=tt
 
 .PHONY: all
 all:: tt
 
 .PHONY: tt
 tt:
-	go build -o $(TARGET_WITH_EXT)
+	go build -o $(LOCAL_TARGET)
 
 .PHONY: linux
 linux:
-	GOOS=linux GOARCH=amd64 go build -o $(TARGET_NO_EXT)
+	GOOS=linux GOARCH=amd64 go build -o $(LINUX_TARGET)
