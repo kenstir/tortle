@@ -35,6 +35,7 @@ var delugeValidColumns = []string{
 	"channels",
 	"completed",
 	"download_location",
+	"downloaded",
 	"group",
 	"hash",
 	"name",
@@ -44,6 +45,7 @@ var delugeValidColumns = []string{
 	"save_path",
 	"seed_time",
 	"state",
+	"uploaded",
 }
 
 var delugeListCmd = &cobra.Command{
@@ -103,7 +105,7 @@ func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string
 		return err
 	}
 
-	// check that all torrents were found
+	// check that all specified torrents were found
 	if len(hashes) > 0 && len(hashes) != len(torrentsStatus) {
 		for _, hash := range hashes {
 			if _, ok := torrentsStatus[hash]; !ok {
@@ -162,6 +164,8 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) 
 		return formatTimestamp(ts.CompletedTime)
 	case "download_location":
 		return ts.DownloadLocation
+	case "downloaded":
+		return humanizeBytes(ts.AllTimeDownload)
 	case "group":
 		return r.Group
 	case "hash":
@@ -178,6 +182,8 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) 
 		return (time.Duration(ts.SeedingTime) * time.Second).String()
 	case "state":
 		return ts.State
+	case "uploaded":
+		return humanizeBytes(ts.TotalUploaded)
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}
