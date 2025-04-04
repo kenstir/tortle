@@ -160,10 +160,12 @@ func qbitFormatColumn(column string, t qbittorrent.Torrent, r rls.Release, human
 	case "download_path":
 		return t.DownloadPath
 	case "downloaded":
-		if humanize {
-			return humanizeBytes(t.Downloaded)
-		}
-		return fmt.Sprintf("%d", t.Downloaded)
+		// waiting on https://github.com/autobrr/go-deluge/pull/8
+		// if humanize {
+		// 	return humanizeBytes(t.Downloaded)
+		// }
+		// return fmt.Sprintf("%d", t.Downloaded)
+		return "TODO"
 	case "group":
 		return r.Group
 	case "hash":
@@ -179,10 +181,12 @@ func qbitFormatColumn(column string, t qbittorrent.Torrent, r rls.Release, human
 	case "state":
 		return string(t.State)
 	case "uploaded":
-		if humanize {
-			return humanizeBytes(t.Uploaded)
-		}
-		return fmt.Sprintf("%d", t.Uploaded)
+		// waiting on https://github.com/autobrr/go-deluge/pull/8
+		// if humanize {
+		// 	return humanizeBytes(t.Uploaded)
+		// }
+		// return fmt.Sprintf("%d", t.Uploaded)
+		return "TODO"
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}
