@@ -24,7 +24,7 @@ func init() {
 
 	qbitListCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
 	qbitListCmd.Flags().StringP("filter", "f", "", "Filter torrents by name")
-	qbitListCmd.Flags().BoolP("humanize", "h", true, "Humanize sizes, e.g. \"2.1 GiB\"")
+	qbitListCmd.Flags().Bool("humanize", true, "Humanize sizes, e.g. \"2.1 GiB\"")
 	qbitListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
 	viper.BindPFlag("qbit.columns", qbitListCmd.Flags().Lookup("columns"))
 	viper.BindPFlag("qbit.filter", qbitListCmd.Flags().Lookup("filter"))
