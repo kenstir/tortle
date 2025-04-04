@@ -179,10 +179,12 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release, 
 	case "download_location":
 		return ts.DownloadLocation
 	case "downloaded":
-		if humanize {
-			return humanizeBytes(ts.AllTimeDownload)
-		}
-		return fmt.Sprintf("%d", ts.AllTimeDownload)
+		// waiting on https://github.com/autobrr/go-deluge/pull/8
+		// if humanize {
+		// 	return humanizeBytes(ts.AllTimeDownload)
+		// }
+		// return fmt.Sprintf("%d", ts.AllTimeDownload)
+		return "TODO"
 	case "group":
 		return r.Group
 	case "hash":
@@ -200,10 +202,12 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release, 
 	case "state":
 		return ts.State
 	case "uploaded":
-		if humanize {
-			return humanizeBytes(ts.TotalUploaded)
-		}
-		return fmt.Sprintf("%d", ts.TotalUploaded)
+		// waiting on https://github.com/autobrr/go-deluge/pull/8
+		// if humanize {
+		// 	return humanizeBytes(ts.TotalUploaded)
+		// }
+		// return fmt.Sprintf("%d", ts.TotalUploaded)
+		return "TODO"
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}
