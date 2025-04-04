@@ -30,7 +30,7 @@ func init() {
 
 	delugeListCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
 	delugeListCmd.Flags().StringP("filter", "f", "", "Filter torrents by name")
-	delugeListCmd.Flags().BoolP("humanize", "h", true, "Humanize sizes, e.g. \"2.1 GiB\"")
+	delugeListCmd.Flags().Bool("humanize", true, "Humanize sizes, e.g. \"2.1 GiB\"")
 	delugeListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
 	viper.BindPFlag("deluge.columns", delugeListCmd.Flags().Lookup("columns"))
 	viper.BindPFlag("deluge.filter", delugeListCmd.Flags().Lookup("filter"))
