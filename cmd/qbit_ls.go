@@ -24,9 +24,11 @@ func init() {
 
 	qbitListCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
 	qbitListCmd.Flags().StringP("filter", "f", "", "Filter torrents by name")
+	qbitListCmd.Flags().BoolP("humanize", "h", true, "Humanize sizes, e.g. \"2.1 GiB\"")
 	qbitListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
 	viper.BindPFlag("qbit.columns", qbitListCmd.Flags().Lookup("columns"))
 	viper.BindPFlag("qbit.filter", qbitListCmd.Flags().Lookup("filter"))
+	viper.BindPFlag("qbit.humanize", qbitListCmd.Flags().Lookup("humanize"))
 	viper.BindPFlag("qbit.noheader", qbitListCmd.Flags().Lookup("noheader"))
 }
 
@@ -60,10 +62,7 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 	var hashes []string
 	hashes = append(hashes, args...)
 
-	// get and check the flags
-	verbosity := viper.GetInt("verbose")
-	filter := viper.GetString("qbit.filter")
-	noheader := viper.GetBool("qbit.noheader")
+	// check flags
 	columns := viper.GetStringSlice("qbit.columns")
 	for _, column := range columns {
 		if !slices.Contains(qbitValidColumns, column) {
@@ -76,14 +75,21 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 	// create a qbit client
 	client := qbitCreateClient()
 
-	err := qbitList(context.Background(), client, hashes, verbosity, columns, filter, noheader)
+	// collect options and go
+	opts := ListOptions{
+		Columns:  columns,
+		Filter:   viper.GetString("qbit.filter"),
+		NoHeader: viper.GetBool("qbit.noheader"),
+		Humanize: viper.GetBool("qbit.humanize"),
+	}
+	err := qbitList(context.Background(), client, hashes, opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 }
 
-func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes []string, verbosity int, columns []string, filter string, noheader bool) error {
+func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes []string, opts ListOptions) error {
 	// connect
 	err := client.LoginCtx(context.Background())
 	if err != nil {
@@ -119,21 +125,20 @@ func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes [
 	}
 
 	// print as CSV
-	if !noheader {
-		header := strings.Join(columns, ",")
-		fmt.Printf("%s\n", header)
+	if !opts.NoHeader {
+		fmt.Printf("%s\n", strings.Join(opts.Columns, ","))
 	}
 	for _, t := range torrents {
 		// skip if the name doesn't match the filter
-		if filter != "" && !strings.Contains(strings.ToLower(t.Name), strings.ToLower(filter)) {
+		if opts.Filter != "" && !strings.Contains(strings.ToLower(t.Name), strings.ToLower(opts.Filter)) {
 			continue
 		}
 
 		// format columns and print as CSV
 		var line []string
 		r := rls.ParseString(t.Name)
-		for _, column := range columns {
-			line = append(line, qbitFormatColumn(column, t, r))
+		for _, column := range opts.Columns {
+			line = append(line, qbitFormatColumn(column, t, r, opts.Humanize))
 		}
 		fmt.Printf("%s\n", strings.Join(line, ","))
 	}
@@ -142,7 +147,7 @@ func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes [
 }
 
 // format the given column
-func qbitFormatColumn(column string, t qbittorrent.Torrent, r rls.Release) string {
+func qbitFormatColumn(column string, t qbittorrent.Torrent, r rls.Release, humanize bool) string {
 	switch column {
 	case "added":
 		return formatTimestamp(int64(t.AddedOn))
@@ -155,7 +160,10 @@ func qbitFormatColumn(column string, t qbittorrent.Torrent, r rls.Release) strin
 	case "download_path":
 		return t.DownloadPath
 	case "downloaded":
-		return humanizeBytes(t.Downloaded)
+		if humanize {
+			return humanizeBytes(t.Downloaded)
+		}
+		return fmt.Sprintf("%d", t.Downloaded)
 	case "group":
 		return r.Group
 	case "hash":
@@ -171,7 +179,10 @@ func qbitFormatColumn(column string, t qbittorrent.Torrent, r rls.Release) strin
 	case "state":
 		return string(t.State)
 	case "uploaded":
-		return humanizeBytes(t.Uploaded)
+		if humanize {
+			return humanizeBytes(t.Uploaded)
+		}
+		return fmt.Sprintf("%d", t.Uploaded)
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}

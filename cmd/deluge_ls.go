@@ -18,14 +18,23 @@ import (
 	"github.com/spf13/viper"
 )
 
+type ListOptions struct {
+	Columns  []string
+	Filter   string
+	NoHeader bool
+	Humanize bool
+}
+
 func init() {
 	delugeCmd.AddCommand(delugeListCmd)
 
 	delugeListCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
 	delugeListCmd.Flags().StringP("filter", "f", "", "Filter torrents by name")
+	delugeListCmd.Flags().BoolP("humanize", "h", true, "Humanize sizes, e.g. \"2.1 GiB\"")
 	delugeListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
 	viper.BindPFlag("deluge.columns", delugeListCmd.Flags().Lookup("columns"))
 	viper.BindPFlag("deluge.filter", delugeListCmd.Flags().Lookup("filter"))
+	viper.BindPFlag("deluge.humanize", delugeListCmd.Flags().Lookup("humanize"))
 	viper.BindPFlag("deluge.noheader", delugeListCmd.Flags().Lookup("noheader"))
 }
 
@@ -74,15 +83,21 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 	// create a deluge client
 	client := delugeCreateV2Client()
 
-	// list
-	err := delugeList(context.Background(), client, hashes, filter, noheader, columns)
+	// collect options and go
+	opts := ListOptions{
+		Columns:  columns,
+		Filter:   filter,
+		NoHeader: noheader,
+		Humanize: viper.GetBool("deluge.humanize"),
+	}
+	err := delugeList(context.Background(), client, hashes, opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 }
 
-func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string, filter string, noheader bool, columns []string) error {
+func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string, opts ListOptions) error {
 	// connect
 	err := client.Connect(ctx)
 	if err != nil {
@@ -127,23 +142,22 @@ func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string
 	})
 
 	// print as CSV
-	if !noheader {
-		header := strings.Join(columns, ",")
-		fmt.Printf("%s\n", header)
+	if !opts.NoHeader {
+		fmt.Printf("%s\n", strings.Join(opts.Columns, ","))
 	}
 	for _, key := range keys {
 		ts := torrentsStatus[key]
 
 		// skip if the name doesn't match the filter
-		if filter != "" && !strings.Contains(strings.ToLower(ts.Name), strings.ToLower(filter)) {
+		if opts.Filter != "" && !strings.Contains(strings.ToLower(ts.Name), strings.ToLower(opts.Filter)) {
 			continue
 		}
 
 		// format columns and print as CSV
 		var line []string
 		r := rls.ParseString(ts.Name)
-		for _, column := range columns {
-			line = append(line, delugeFormatColumn(column, ts, r))
+		for _, column := range opts.Columns {
+			line = append(line, delugeFormatColumn(column, ts, r, opts.Humanize))
 		}
 		fmt.Printf("%s\n", strings.Join(line, ","))
 	}
@@ -152,7 +166,7 @@ func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string
 }
 
 // format the given column
-func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) string {
+func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release, humanize bool) string {
 	switch column {
 	case "added":
 		return formatTimestamp(int64(ts.TimeAdded))
@@ -165,7 +179,10 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) 
 	case "download_location":
 		return ts.DownloadLocation
 	case "downloaded":
-		return humanizeBytes(ts.AllTimeDownload)
+		if humanize {
+			return humanizeBytes(ts.AllTimeDownload)
+		}
+		return fmt.Sprintf("%d", ts.AllTimeDownload)
 	case "group":
 		return r.Group
 	case "hash":
@@ -183,7 +200,10 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release) 
 	case "state":
 		return ts.State
 	case "uploaded":
-		return humanizeBytes(ts.TotalUploaded)
+		if humanize {
+			return humanizeBytes(ts.TotalUploaded)
+		}
+		return fmt.Sprintf("%d", ts.TotalUploaded)
 	default:
 		return fmt.Sprintf("Unknown column: %s", column)
 	}
