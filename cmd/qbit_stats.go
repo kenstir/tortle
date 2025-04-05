@@ -6,7 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/kenstir/tortle/internal"
 	"github.com/spf13/cobra"
@@ -29,8 +28,7 @@ func qbitStatsCmdRun(cmd *cobra.Command, args []string) {
 	// get and print stats
 	err := qbitStats(context.Background(), client)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		fatalError(err)
 	}
 }
 

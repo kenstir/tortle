@@ -41,8 +41,7 @@ func delugeMoveCmdRun(cmd *cobra.Command, args []string) {
 		if os.Getenv("MSYS_NO_PATHCONV") != "1" {
 			stdoutLogger.Printf("Warning: MSYSTEM=%s, msys path conversion is in effect\n", os.Getenv("MSYSTEM"))
 			if !force {
-				fmt.Fprintf(os.Stderr, "Error: msys path conversion in effect, rerun with MSYS_NO_PATHCONV=1 or --force\n")
-				os.Exit(1)
+				fatalError(fmt.Errorf("msys path conversion in effect, rerun with MSYS_NO_PATHCONV=1 or --force"))
 			}
 		}
 	}
@@ -53,8 +52,7 @@ func delugeMoveCmdRun(cmd *cobra.Command, args []string) {
 	// move
 	err := delugeMove(context.Background(), client, hash, path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		fatalError(err)
 	}
 }
 

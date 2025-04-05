@@ -6,7 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 	"time"
@@ -66,9 +65,7 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 	columns := viper.GetStringSlice("qbit.columns")
 	for _, column := range columns {
 		if !slices.Contains(qbitValidColumns, column) {
-			fmt.Printf("Unknown column: %s\n", column)
-			fmt.Printf("Valid values for --column: %s\n", strings.Join(qbitValidColumns, ", "))
-			os.Exit(1)
+			fatalError(fmt.Errorf("unknown column: %s (expected one of {%s})", column, strings.Join(qbitValidColumns, ", ")))
 		}
 	}
 
@@ -84,8 +81,7 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 	}
 	err := qbitList(context.Background(), client, hashes, opts)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		fatalError(err)
 	}
 }
 

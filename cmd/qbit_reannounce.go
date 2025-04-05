@@ -6,8 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -49,9 +47,6 @@ var qbitReannounceCmd = &cobra.Command{
 	Run:     qbitReannounceCmdRun,
 }
 
-var stdoutLogger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds)
-var stderrLogger = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds)
-
 func qbitReannounceCmdRun(cmd *cobra.Command, args []string) {
 	// get the flags
 	hash := args[0]
@@ -74,7 +69,7 @@ func qbitReannounceCmdRun(cmd *cobra.Command, args []string) {
 	}
 	err := qbitReannounce(context.Background(), client, hash, options)
 	if err != nil {
-		stdoutLogger.Fatal(err)
+		fatalError(err)
 	}
 }
 
@@ -105,7 +100,7 @@ func qbitReannounce(ctx context.Context, client internal.QbitClientInterface, ha
 	age := time.Now().Unix() - torrent.AddedOn
 	stdoutLogger.Printf("%s: found torrent age=%d\n", hash, age)
 	if age > int64(opts.MaxAge) {
-		return fmt.Errorf("%s: torrent is %ds old, max_age is %ds", hash, age, opts.MaxAge)
+		return fmt.Errorf("torrent is %ds old, max_age is %ds", age, opts.MaxAge)
 	}
 	// if torrent.CompletionOn > 0 {
 	// 	stdoutLogger.Printf("%s: torrent is finished\n", hash)
