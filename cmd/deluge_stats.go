@@ -6,7 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/autobrr/go-deluge"
 	"github.com/spf13/cobra"
@@ -30,8 +29,7 @@ func delugeStatsCmdRun(cmd *cobra.Command, args []string) {
 	// get and print stats
 	err := delugeStats(context.Background(), client)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		fatalError(err)
 	}
 }
 

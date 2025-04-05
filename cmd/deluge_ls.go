@@ -6,7 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"slices"
 	"sort"
 	"strings"
@@ -68,15 +67,11 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 	var hashes []string
 	hashes = append(hashes, args...)
 
-	// get and check the flags
-	filter := viper.GetString("deluge.filter")
-	noheader := viper.GetBool("deluge.noheader")
+	// check flags
 	columns := viper.GetStringSlice("deluge.columns")
 	for _, column := range columns {
 		if !slices.Contains(delugeValidColumns, column) {
-			fmt.Printf("Unknown column: %s\n", column)
-			fmt.Printf("Valid values for --column: %s\n", strings.Join(delugeValidColumns, ", "))
-			os.Exit(1)
+			fatalError(fmt.Errorf("unknown column: %s (expected one of {%s})", column, strings.Join(delugeValidColumns, ", ")))
 		}
 	}
 
@@ -86,14 +81,13 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 	// collect options and go
 	opts := ListOptions{
 		Columns:  columns,
-		Filter:   filter,
-		NoHeader: noheader,
+		Filter:   viper.GetString("deluge.filter"),
+		NoHeader: viper.GetBool("deluge.noheader"),
 		Humanize: viper.GetBool("deluge.humanize"),
 	}
 	err := delugeList(context.Background(), client, hashes, opts)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		fatalError(err)
 	}
 }
 

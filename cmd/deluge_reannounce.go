@@ -62,8 +62,7 @@ func delugeReannounceCmdRun(cmd *cobra.Command, args []string) {
 	err := delugeReannounce(context.Background(), client, hash, options)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(0)
-		//os.Exit(1) // for now don't exit non-zero; is this why deluge is not saving a copy of .torrent files?
+		exitWithFinalizers(0) // for now don't exit non-zero; is this why deluge is not saving a copy of .torrent files?
 	}
 }
 
