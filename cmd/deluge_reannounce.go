@@ -171,23 +171,26 @@ func delugeGetTorrentStatus(ctx context.Context, client deluge.DelugeClient, has
 
 // delugeCheckStatus returns (skipReannounce, isOK)
 func delugeCheckStatus(ts *deluge.TorrentStatus) (bool, bool) {
-	msg := strings.ToLower(ts.TrackerStatus)
+	status := strings.ToLower(ts.TrackerStatus)
 
+	// skip reannounce if status contains any of these words
 	skipWords := []string{"announce sent", "too many requests"}
 	for _, v := range skipWords {
-		if strings.Contains(msg, v) {
+		if strings.Contains(status, v) {
 			return true, false
 		}
 	}
 
-	notOKWords := []string{"unregistered", "end of file", "bad gateway", "error"}
-	for _, v := range notOKWords {
-		if strings.Contains(msg, v) {
-			return false, false
-		}
+	// it looks as if the only OK status is "Announce OK"
+	// see https://github.com/deluge-torrent/deluge/blob/0b5addf58eac1f379ee1af83247d8dee0c1eae78/deluge/core/torrentmanager.py#L1351
+	// and https://github.com/deluge-torrent/deluge/blob/0b5addf58eac1f379ee1af83247d8dee0c1eae78/deluge/core/torrentmanager.py#L1398
+	if status == "announce ok" {
+		return false, true
 	}
 
-	return false, true
+	// treat all other status as not OK
+	//notOKWords := []string{"unregistered", "end of file", "bad gateway", "error"}
+	return false, false
 }
 
 func delugeForceReannounce(ctx context.Context, client deluge.DelugeClient, hash string, prefix string) {
