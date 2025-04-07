@@ -53,6 +53,7 @@ var delugeValidColumns = []string{
 	"save_path",
 	"seed_time",
 	"state",
+	"status",
 	"uploaded",
 }
 
@@ -193,6 +194,8 @@ func delugeFormatColumn(column string, ts *deluge.TorrentStatus, r rls.Release, 
 		return (time.Duration(ts.SeedingTime) * time.Second).String()
 	case "state":
 		return ts.State
+	case "status":
+		return ts.TrackerStatus
 	case "uploaded":
 		if humanize {
 			return humanizeBytes(ts.TotalUploaded)
