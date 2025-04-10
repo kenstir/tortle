@@ -47,6 +47,7 @@ var qbitValidColumns = []string{
 	"save_path",
 	"seed_time",
 	"state",
+	"tags",
 	"uploaded",
 }
 
@@ -174,6 +175,8 @@ func qbitFormatColumn(column string, t qbittorrent.Torrent, r rls.Release, human
 		return (time.Duration(t.SeedingTime) * time.Second).String()
 	case "state":
 		return string(t.State)
+	case "tags":
+		return t.Tags
 	case "uploaded":
 		if humanize {
 			return humanizeBytes(t.Uploaded)
