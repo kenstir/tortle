@@ -5,6 +5,7 @@
 
 # junk
 /*.log
+*~
 
 # ide
 /.vscode
