@@ -20,7 +20,7 @@ var verbosity int
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "tt",
-	Short: "tt (torrent tool or tortle) is a multi-tool Deluge and qBittorrent",
+	Short: "tt (torrent tool or tortle) is a multi-tool for Deluge and qBittorrent",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
