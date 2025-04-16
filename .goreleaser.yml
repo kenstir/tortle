@@ -29,11 +29,11 @@ builds:
 archives:
   - format_overrides:
       - goos: windows
-        format: "zip"
+        formats: [ 'zip' ]
     files:
-      - LICENSE.txt
-      - README.md
       - tt.toml.example
+#      - LICENSE
+#      - README.md
 
 release:
   prerelease: auto
