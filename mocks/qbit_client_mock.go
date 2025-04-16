@@ -21,6 +21,11 @@ func (_m *QbitMockClient) LoginCtx(ctx context.Context) error {
 	return args.Error(0)
 }
 
+func (_m *QbitMockClient) GetTransferInfoCtx(ctx context.Context) (*qbittorrent.TransferInfo, error) {
+	args := _m.Called(ctx)
+	return args.Get(0).(*qbittorrent.TransferInfo), args.Error(1)
+}
+
 func (_m *QbitMockClient) GetTorrentsCtx(ctx context.Context, filter qbittorrent.TorrentFilterOptions) ([]qbittorrent.Torrent, error) {
 	args := _m.Called(ctx, filter)
 	return args.Get(0).([]qbittorrent.Torrent), args.Error(1)
