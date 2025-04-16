@@ -17,6 +17,14 @@ var cfgFile string
 var logFile io.WriteCloser
 var verbosity int
 
+type VersionInfo struct {
+	Version string `json:"version"`
+	Commit  string `json:"commit"`
+	Date    string `json:"date"`
+}
+
+var versionInfo VersionInfo
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "tt",
@@ -25,7 +33,12 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+func Execute(version string, commit string, date string) {
+	versionInfo = VersionInfo{
+		Version: version,
+		Commit:  commit,
+		Date:    date,
+	}
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
