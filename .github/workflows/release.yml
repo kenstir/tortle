@@ -56,6 +56,8 @@ jobs:
 
   release:
     name: Release and publish
+    needs: [ test ]
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
