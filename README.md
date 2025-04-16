@@ -1,10 +1,43 @@
 # tortle - torrent tool, like qbittools but for Deluge and qBittorrent
 
-I started tortle (`tt`) as a way to list the contents of Deluge server or qBittorrent server using Golang APIs and Cobra/Viper, and that became:
+## Quick Start
+
+1. Download a release
+2. Create a config file `tt.toml` in the same directory as the executable.  See `tt.toml.example`.
+3. Profit
+
+## What can you do with it?
+
+* List torrents
+  ```
+  tt [d|q] ls
+  ```
+* Reannounce a torrent, via "Run external program on torrent added:
+  ```
+  tt qbit reannounce "%I"
+  ```
+* Report stats in InfluxDB line protocol, for use as in the telegraf execute plugin:
+  ```
+  [[inputs.exec]]
+    commands = [
+      "/tor/bin/tt deluge stats",
+      "/tor/bin/tt qbit stats",
+    ]
+  ```
+
+## Why this project?
+
+I started tortle (`tt`) as a way to list the contents of Deluge and qBittorrent, and that became:
 
 ```
 tt deluge ls --columns=ratio,name
 tt qbit ls --columns=ratio,name
+```
+
+Now if you want to process the first column, e.g. to calculate the average ratio for "Perseverence":
+
+```
+./tt.exe qbit ls --noheader --columns=ratio,name --filter=sever | column -s, -t
 ```
 
 Then I discovered that none of the qbit "reannounce scripts" worked like I thought they should, and that became:
