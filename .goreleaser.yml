@@ -32,8 +32,8 @@ archives:
         formats: [ 'zip' ]
     files:
       - tt.toml.example
-#      - LICENSE
-#      - README.md
+      - LICENSE
+      - README.md
 
 release:
   prerelease: auto
