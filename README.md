@@ -3,7 +3,11 @@
 ## Quick Start
 
 1. Download a release
-2. Create a config file `tt.toml` in the same directory as the executable.  See `tt.toml.example`.
+2. Create a config file `tt.toml` in the same directory as the executable:
+   ```
+   ./tt config > tt.toml
+   ```
+   Edit `tt.toml` with your usernames and passwords.
 3. Profit
 
 ## What can you do with it?
@@ -12,7 +16,7 @@
   ```
   tt [d|q] ls
   ```
-* Reannounce a torrent, via "Run external program on torrent added:
+* Reannounce a torrent, via "Run external program on torrent added":
   ```
   tt qbit reannounce "%I"
   ```
@@ -20,8 +24,8 @@
   ```
   [[inputs.exec]]
     commands = [
-      "/tor/bin/tt deluge stats",
-      "/tor/bin/tt qbit stats",
+      "/data/bin/tt deluge stats",
+      "/data/bin/tt qbit stats",
     ]
   ```
 
@@ -34,10 +38,10 @@ tt deluge ls --columns=ratio,name
 tt qbit ls --columns=ratio,name
 ```
 
-Now if you want to process the first column, e.g. to calculate the average ratio for "Perseverence":
+Now you can do all sorts of things, like calculate the average ratio for torrents matching "sever":
 
 ```
-./tt.exe qbit ls --noheader --columns=ratio,name --filter=sever | column -s, -t
+./tt qbit ls --noheader --columns=ratio,name --filter=sever | column -s, -t | awk 'BEGIN { total=0; num=0; } { num++; total += $1; } END { print "num=" num; print "total=" total; print "avg=" (total/num); }'
 ```
 
 Then I discovered that none of the qbit "reannounce scripts" worked like I thought they should, and that became:
