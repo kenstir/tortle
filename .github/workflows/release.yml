@@ -69,23 +69,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify tag commit is this commit
-        run: |
-          CURRENT_COMMIT=$(git rev-parse HEAD)
-          TAG_COMMIT=$(git rev-list -n 1 $GITHUB_REF)
-          if [ "$CURRENT_COMMIT" != "$TAG_COMMIT" ]; then
-            echo "tag commit $TAG_COMMIT != head $CURRENT_COMMIT"
-            exit 1
-          fi
-
       - name: Set up Go
-        if: success()
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
 
       - name: Run GoReleaser
-        if: success()
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
