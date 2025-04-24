@@ -13,28 +13,35 @@ import (
 var (
 	version = "dev"
 	commit  = "unknown"
-	date    = "unknown"
+	date    = ""
+	builtBy = ""
 )
 
 func main() {
+	overrideVersionInfo()
+	cmd.Execute(version, commit, date)
+}
+
+func overrideVersionInfo() {
+	if builtBy == "goreleaser" {
+		// everything is set by goreleaser, skip
+		return
+	}
 	info, ok := debug.ReadBuildInfo()
 	if ok {
-		vcsRevision := ""
+		vcsRevision := "unknown"
 		vcsModified := false
 		for _, setting := range info.Settings {
-			//fmt.Printf("Key: %s, Value: %s\n", setting.Key, setting.Value)
 			if setting.Key == "vcs.revision" {
 				vcsRevision = setting.Value
 			} else if setting.Key == "vcs.modified" {
 				vcsModified = setting.Value == "true"
 			}
 		}
-		if vcsRevision != commit {
+		if vcsModified {
+			commit = "locally modified"
+		} else {
 			commit = vcsRevision
-			if vcsModified {
-				commit = "locally modified"
-			}
 		}
 	}
-	cmd.Execute(version, commit, date)
 }
