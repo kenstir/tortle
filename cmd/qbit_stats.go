@@ -87,7 +87,6 @@ func qbitStatsAddComputedFields(torrents []qbittorrent.Torrent) []string {
 		if t.UpSpeed > 0 || t.DlSpeed > 0 {
 			numActive++
 		}
-		// fmt.Printf("kcxxx state=%s\n", t.State)
 		if t.State == qbittorrent.TorrentStateError {
 			numError++
 		}
