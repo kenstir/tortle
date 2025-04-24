@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/autobrr/go-qbittorrent"
 	"github.com/kenstir/tortle/internal"
 	"github.com/spf13/cobra"
 )
@@ -66,6 +67,43 @@ func qbitStats(ctx context.Context, client internal.QbitClientInterface) error {
 		fmt.Sprintf("total_upload=%du", info.UpInfoData),
 	}
 
+	// add calculated fields
+	torrents, err := client.GetTorrentsCtx(ctx, qbittorrent.TorrentFilterOptions{})
+	if err != nil {
+		return err
+	}
+	fields = append(fields, qbitStatsAddComputedFields(torrents)...)
+
 	printMeasurement("tt_stats", tags, fields)
 	return nil
+}
+
+func qbitStatsAddComputedFields(torrents []qbittorrent.Torrent) []string {
+	numActive := 0
+	numSeeding := 0
+	numDownloading := 0
+	numError := 0
+	for _, t := range torrents {
+		if t.UpSpeed > 0 || t.DlSpeed > 0 {
+			numActive++
+		}
+		// fmt.Printf("kcxxx state=%s\n", t.State)
+		if t.State == qbittorrent.TorrentStateError {
+			numError++
+		}
+		if t.State == qbittorrent.TorrentStateUploading || t.State == qbittorrent.TorrentStateStalledUp || t.State == qbittorrent.TorrentStateForcedUp {
+			numSeeding++
+		} else if t.State == qbittorrent.TorrentStateDownloading {
+			numDownloading++
+		}
+	}
+
+	fields := []string{
+		fmt.Sprintf("num_torrents=%du", len(torrents)),
+		fmt.Sprintf("num_active=%du", numActive),
+		fmt.Sprintf("num_seeding=%du", numSeeding),
+		fmt.Sprintf("num_downloading=%du", numDownloading),
+		fmt.Sprintf("num_error=%du", numError),
+	}
+	return fields
 }
