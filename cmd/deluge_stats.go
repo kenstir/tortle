@@ -56,7 +56,7 @@ func delugeStats(ctx context.Context, client deluge.DelugeClient) error {
 	}
 	fields := []string{
 		// Seems nobody wants to see DownloadRate and UploadRate;
-		// PayloadDownloadRate and PayloadUploadRate are the ones shown in the GUI
+		// PayloadDownloadRate and PayloadUploadRate are the ones shown in the Deluge GUI
 		// fmt.Sprintf("download_rate=%.1f", status.DownloadRate),
 		// fmt.Sprintf("upload_rate=%.1f", status.UploadRate),
 		fmt.Sprintf("download_rate=%.1f", status.PayloadDownloadRate),
@@ -65,6 +65,40 @@ func delugeStats(ctx context.Context, client deluge.DelugeClient) error {
 		fmt.Sprintf("total_upload=%du", status.TotalUpload),
 	}
 
+	// add calculated fields
+	torrentsStatus, err := client.TorrentsStatus(ctx, deluge.StateUnspecified, nil)
+	if err != nil {
+		return err
+	}
+	fields = append(fields, delugeStatsCalculatedFields(torrentsStatus)...)
+
 	printMeasurement("tt_stats", tags, fields)
 	return nil
+}
+
+func delugeStatsCalculatedFields(torrentsStatus map[string]*deluge.TorrentStatus) []string {
+	numActive := 0
+	numSeeding := 0
+	numDownloading := 0
+	numError := 0
+	for _, ts := range torrentsStatus {
+		if ts.UploadPayloadRate > 0 || ts.DownloadPayloadRate > 0 {
+			numActive++
+		}
+		if ts.State == string(deluge.StateSeeding) {
+			numSeeding++
+		} else if ts.State == string(deluge.StateDownloading) {
+			numDownloading++
+		} else if ts.State == string(deluge.StateError) {
+			numError++
+		}
+	}
+	fields := []string{
+		fmt.Sprintf("num_torrents=%du", len(torrentsStatus)),
+		fmt.Sprintf("num_active=%du", numActive),
+		fmt.Sprintf("num_seeding=%du", numSeeding),
+		fmt.Sprintf("num_downloading=%du", numDownloading),
+		fmt.Sprintf("num_error=%du", numError),
+	}
+	return fields
 }
