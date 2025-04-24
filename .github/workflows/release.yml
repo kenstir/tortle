@@ -26,9 +26,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - name: Debug
-        run: |
-          printenv | sort
+      # - name: Debug
+      #   run: |
+      #     printenv | sort
 
       - name: Test
         run: go test -v ./...
