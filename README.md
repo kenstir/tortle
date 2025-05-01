@@ -4,7 +4,7 @@
 
 These instructions can be followed exactly if you are running qBittorrent in Docker, e.g. linuxserver/qbittorrent.  If you aren't, you can figure it out.
 
-1. Download the linux_amd64 release from [GitHub](https://github.com/kenstir/tortle/releases).
+1. Download the linux_amd64 package from [GitHub Releases](https://github.com/kenstir/tortle/releases).
 2. Extract the `tt` binary into whatever directory you volume mount as `/config`.
 3. Create a config file `tt.toml` in that same directory with the contents:
    ```
@@ -25,7 +25,7 @@ These instructions can be followed exactly if you are running qBittorrent in Doc
   ```
   tt [d|q] ls
   ```
-* Reannounce a torrent, via "Run external program on torrent added":
+* Reannounce a torrent until it's healthy, via "Run external program on torrent added":
   ```
   /config/tt qbit reannounce "%I"
   ```
