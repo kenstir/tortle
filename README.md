@@ -2,13 +2,22 @@
 
 ## Quick Start
 
-1. Download a release
-2. Create a config file `tt.toml` in the same directory as the executable:
+These instructions can be followed exactly if you are running qBittorrent running in Docker, e.g. linuxserver/qbittorrent.  If you aren't, you can figure it out.
+
+1. Download the linux_amd64 release from [GitHub](https://github.com/kenstir/tortle/releases).
+2. Extract the `tt` binary into whatever directory you volume mount as `/config`.
+3. Create a config file `tt.toml` in that same directory with the contents:
    ```
-   ./tt config > tt.toml
+   [qbit]
+   server = "http://localhost:8080"
+   username = "admin"
+   password = "password"
    ```
-   Edit `tt.toml` with your usernames and passwords.
-3. Profit
+   Change your username and password.  Change `:8080` if you changed the `WEBUI_PORT`.
+4. Configure qBittorrent to run this program when a torrent is added.  Under Tools >> Options, Downloads tab, set "Run external program on torrent added" to:
+   ```
+   /config/tt qbit reannounce "%I"
+   ```
 
 ## What can you do with it?
 
@@ -18,7 +27,7 @@
   ```
 * Reannounce a torrent, via "Run external program on torrent added":
   ```
-  tt qbit reannounce "%I"
+  /config/tt qbit reannounce "%I"
   ```
 * Report stats in InfluxDB line protocol, for use as in the telegraf execute plugin:
   ```
@@ -38,7 +47,7 @@ tt deluge ls --columns=ratio,name
 tt qbit ls --columns=ratio,name
 ```
 
-Now you can do all sorts of things, like calculate the average ratio for torrents matching "sever":
+With that output you can do all sorts of things, like calculate the average ratio for torrents matching "sever":
 
 ```
 ./tt qbit ls --noheader --columns=ratio,name --filter=sever | column -s, -t | awk 'BEGIN { total=0; num=0; } { num++; total += $1; } END { print "num=" num; print "total=" total; print "avg=" (total/num); }'
