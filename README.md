@@ -2,7 +2,7 @@
 
 ## Quick Start
 
-These instructions can be followed exactly if you are running qBittorrent running in Docker, e.g. linuxserver/qbittorrent.  If you aren't, you can figure it out.
+These instructions can be followed exactly if you are running qBittorrent in Docker, e.g. linuxserver/qbittorrent.  If you aren't, you can figure it out.
 
 1. Download the linux_amd64 release from [GitHub](https://github.com/kenstir/tortle/releases).
 2. Extract the `tt` binary into whatever directory you volume mount as `/config`.
