@@ -12,6 +12,7 @@ import (
 
 type QbitClientInterface interface {
 	LoginCtx(context.Context) error
+	DeleteTorrentsCtx(context.Context, []string, bool) error
 	GetTransferInfoCtx(ctx context.Context) (*qbittorrent.TransferInfo, error)
 	GetTorrentsCtx(context.Context, qbittorrent.TorrentFilterOptions) ([]qbittorrent.Torrent, error)
 	GetTorrentTrackersCtx(context.Context, string) ([]qbittorrent.TorrentTracker, error)
@@ -30,8 +31,8 @@ func NewQbitClient(cfg qbittorrent.Config) *QbitClient {
 	}
 }
 
-func (qc *QbitClient) LoginCtx(ctx context.Context) error {
-	return qc.client.LoginCtx(ctx)
+func (qc *QbitClient) DeleteTorrentsCtx(ctx context.Context, hashes []string, deleteFiles bool) error {
+	return qc.client.DeleteTorrentsCtx(ctx, hashes, deleteFiles)
 }
 
 func (qc *QbitClient) GetTransferInfoCtx(ctx context.Context) (*qbittorrent.TransferInfo, error) {
@@ -48,6 +49,10 @@ func (qc *QbitClient) GetTorrentTrackersCtx(ctx context.Context, hash string) ([
 
 func (qc *QbitClient) GetTorrentPropertiesCtx(ctx context.Context, hash string) (qbittorrent.TorrentProperties, error) {
 	return qc.client.GetTorrentPropertiesCtx(ctx, hash)
+}
+
+func (qc *QbitClient) LoginCtx(ctx context.Context) error {
+	return qc.client.LoginCtx(ctx)
 }
 
 func (qc *QbitClient) ReAnnounceTorrentsCtx(ctx context.Context, hashes []string) error {

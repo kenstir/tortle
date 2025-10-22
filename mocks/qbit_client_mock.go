@@ -16,8 +16,8 @@ func NewQbitMockClient() *QbitMockClient {
 	return &QbitMockClient{}
 }
 
-func (_m *QbitMockClient) LoginCtx(ctx context.Context) error {
-	args := _m.Called(ctx)
+func (_m *QbitMockClient) DeleteTorrentsCtx(ctx context.Context, hashes []string, deleteFiles bool) error {
+	args := _m.Called(ctx, hashes, deleteFiles)
 	return args.Error(0)
 }
 
@@ -39,6 +39,11 @@ func (_m *QbitMockClient) GetTorrentTrackersCtx(ctx context.Context, hash string
 func (_m *QbitMockClient) GetTorrentPropertiesCtx(ctx context.Context, hash string) (qbittorrent.TorrentProperties, error) {
 	args := _m.Called(ctx, hash)
 	return args.Get(0).(qbittorrent.TorrentProperties), args.Error(1)
+}
+
+func (_m *QbitMockClient) LoginCtx(ctx context.Context) error {
+	args := _m.Called(ctx)
+	return args.Error(0)
 }
 
 func (_m *QbitMockClient) ReAnnounceTorrentsCtx(ctx context.Context, hashes []string) error {
