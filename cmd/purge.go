@@ -31,7 +31,7 @@ func purgeCmdRun(cmd *cobra.Command, args []string) {
 	// get the flags and go
 	dryRun := viper.GetBool("purge.dry-run")
 	scanPaths := viper.GetStringSlice("purge.scan-path")
-	err := purge(torrentPath, scanPaths, dryRun)
+	err := purgeCopies(torrentPath, scanPaths, dryRun)
 	if err != nil {
 		fatalError(err)
 	}
