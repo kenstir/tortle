@@ -25,7 +25,7 @@ func isDir(stat *unix.Stat_t) bool {
 	return stat.Mode&unix.S_IFMT == unix.S_IFDIR
 }
 
-func purge(torrentPath string, scanPaths []string, dryRun bool) error {
+func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 	// check that torrentPath exists and is a regular file or directory
 	var stat unix.Stat_t
 	err := unix.Lstat(torrentPath, &stat)

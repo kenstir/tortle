@@ -6,6 +6,6 @@ import (
 	"fmt"
 )
 
-func purge(torrentPath string, scanPaths []string, dryRun bool) error {
+func purgeCopies(_ string, _ []string, _ bool) error {
 	return fmt.Errorf("purge not supported on Windows")
 }
