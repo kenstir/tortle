@@ -4,6 +4,9 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
+	"path/filepath"
+	"slices"
 
 	"golang.org/x/sys/unix"
 )
@@ -14,37 +17,143 @@ func VerbosePrintf(format string, args ...interface{}) {
 	}
 }
 
-func purge(torrentPath string, scanPaths []string, dryRun bool) error {
-	// find the device and inode of the torrent file
-	// fileInfo, err := os.Stat(torrentPath)
-	// if err != nil {
-	// 	return err
-	// }
+func isRegularFile(stat *unix.Stat_t) bool {
+	return stat.Mode&unix.S_IFMT == unix.S_IFREG
+}
 
+func isDir(stat *unix.Stat_t) bool {
+	return stat.Mode&unix.S_IFMT == unix.S_IFDIR
+}
+
+func purge(torrentPath string, scanPaths []string, dryRun bool) error {
+	// check that torrentPath exists and is a regular file or directory
 	var stat unix.Stat_t
 	err := unix.Lstat(torrentPath, &stat)
 	if err != nil {
 		return fmt.Errorf("%s: %v", torrentPath, err)
 	}
 
-	switch stat.Mode & unix.S_IFMT {
-	case unix.S_IFREG:
-		VerbosePrintf("%s: Regular file\n", torrentPath)
-	case unix.S_IFDIR:
-		VerbosePrintf("%s: Directory\n", torrentPath)
-	default:
+	// check that there is at least one scan path
+	if len(scanPaths) == 0 {
+		return fmt.Errorf("no --scan-paths specified")
+	}
+
+	// remember device and inodes for all regular files that have more than one link
+	torrentDevice := stat.Dev
+	torrentInodes := []uint64{}
+	if isRegularFile(&stat) {
+		VerbosePrintf("%s: regular file (nlink: %d)\n", torrentPath, stat.Nlink)
+		if stat.Nlink > 1 {
+			torrentInodes = append(torrentInodes, stat.Ino)
+		}
+	} else if isDir(&stat) {
+		VerbosePrintf("%s: directory\n", torrentPath)
+		torrentInodes = findAllFilesWithLinks(torrentPath)
+	} else {
 		return fmt.Errorf("%s: not a regular file or directory", torrentPath)
 	}
-	VerbosePrintf("Torrent file: %s\n", torrentPath)
-	VerbosePrintf("Dev:          %d\n", stat.Dev)
-	VerbosePrintf("Inode:        %d\n", stat.Ino)
-	VerbosePrintf("Nlink:        %d\n", stat.Nlink)
 
-	// TODO: Implement the actual purging logic
-	// This would involve:
-	// 1. Walking through scanPaths
-	// 2. Finding files with same device/inode
-	// 3. Removing hard links if !dryRun
+	// exit early if there are no inodes to look for
+	if len(torrentInodes) == 0 {
+		VerbosePrintf("no regular files with more than one link")
+		return nil
+	}
 
-	return nil
+	// scan paths for matching files and remove them
+	var lastError error
+	for _, scanPath := range scanPaths {
+		VerbosePrintf("scanning %s\n", scanPath)
+		err = unix.Lstat(scanPath, &stat)
+		if err != nil {
+			return fmt.Errorf("%s: %v", scanPath, err)
+		}
+		if stat.Dev != torrentDevice {
+			return fmt.Errorf("%s: different file system", scanPath)
+		}
+		dups := findMatchingFiles(scanPath, torrentInodes)
+		for _, dup := range dups {
+			if dryRun || verbosity > 0 {
+				stderrLogger.Printf("unlink %s\n", dup)
+			}
+			if !dryRun {
+				err = unix.Unlink(dup)
+				if err != nil {
+					stderrLogger.Printf("%s: error unlinking: %v\n", dup, err)
+					lastError = err
+				}
+			}
+		}
+	}
+
+	return lastError
+}
+
+func findAllFilesWithLinks(rootPath string) []uint64 {
+	var inodes []uint64
+
+	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			VerbosePrintf("%s: skipping: %v\n", path, err)
+			return filepath.SkipDir
+		}
+
+		// skip directories
+		if d.IsDir() {
+			return nil
+		}
+
+		// stat the file
+		var stat unix.Stat_t
+		err = unix.Lstat(path, &stat)
+		if err != nil {
+			VerbosePrintf("%s: skipping: %v\n", path, err)
+		}
+
+		// check if it's a regular file with more than one link
+		if isRegularFile(&stat) && stat.Nlink > 1 {
+			inodes = append(inodes, stat.Ino)
+		} else {
+			VerbosePrintf("%s: skipping: no other links\n", path)
+		}
+
+		return nil
+	})
+	if err != nil {
+		VerbosePrintf("%s: error walking directory: %v\n", rootPath, err)
+	}
+	return inodes
+}
+
+func findMatchingFiles(rootPath string, inodes []uint64) []string {
+	var matches []string
+	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			VerbosePrintf("%s: skipping: %v\n", path, err)
+			return filepath.SkipDir
+		}
+
+		// skip directories
+		if d.IsDir() {
+			return nil
+		}
+
+		// stat the file
+		var stat unix.Stat_t
+		err = unix.Lstat(path, &stat)
+		if err != nil {
+			VerbosePrintf("%s: skipping: %v\n", path, err)
+			return nil
+		}
+
+		// check if it's a regular file with a matching inode
+		if isRegularFile(&stat) && slices.Contains(inodes, stat.Ino) {
+			matches = append(matches, path)
+		}
+
+		return nil
+	})
+	if err != nil {
+		VerbosePrintf("%s: error walking directory: %v\n", rootPath, err)
+	}
+	return matches
 }
