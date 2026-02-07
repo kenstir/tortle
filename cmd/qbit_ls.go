@@ -23,10 +23,12 @@ func init() {
 
 	qbitListCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
 	qbitListCmd.Flags().StringP("filter", "f", "", "Filter torrents by name")
+	qbitListCmd.Flags().StringP("tag", "t", "", "Filter torrents by tag")
 	qbitListCmd.Flags().Bool("humanize", true, "Humanize sizes, e.g. \"2.1 GiB\"")
 	qbitListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
 	viper.BindPFlag("qbit.columns", qbitListCmd.Flags().Lookup("columns"))
 	viper.BindPFlag("qbit.filter", qbitListCmd.Flags().Lookup("filter"))
+	viper.BindPFlag("qbit.tag", qbitListCmd.Flags().Lookup("tag"))
 	viper.BindPFlag("qbit.humanize", qbitListCmd.Flags().Lookup("humanize"))
 	viper.BindPFlag("qbit.noheader", qbitListCmd.Flags().Lookup("noheader"))
 }
@@ -77,6 +79,7 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 	opts := ListOptions{
 		Columns:  columns,
 		Filter:   viper.GetString("qbit.filter"),
+		Tag:      viper.GetString("qbit.tag"),
 		NoHeader: viper.GetBool("qbit.noheader"),
 		Humanize: viper.GetBool("qbit.humanize"),
 	}
@@ -97,6 +100,7 @@ func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes [
 	torrents, err := client.GetTorrentsCtx(ctx, qbittorrent.TorrentFilterOptions{
 		Sort:   "name",
 		Hashes: hashes,
+		Tag:    opts.Tag,
 	})
 	if err != nil {
 		return err
@@ -105,14 +109,7 @@ func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes [
 	// check that all specified torrents were found
 	if len(hashes) > 0 && len(hashes) != len(torrents) {
 		for _, hash := range hashes {
-			found := false
-			for _, t := range torrents {
-				if t.Hash == hash {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !slices.ContainsFunc(torrents, func(t qbittorrent.Torrent) bool { return t.Hash == hash }) {
 				return fmt.Errorf("%s: torrent not found", hash)
 			}
 		}
