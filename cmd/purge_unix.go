@@ -36,20 +36,20 @@ func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 	torrentDevice := stat.Dev
 	torrentInodes := []uint64{}
 	if isRegularFile(&stat) {
-		vLogf("%s: regular file (nlink: %d)\n", torrentPath, stat.Nlink)
+		vvLogf("%s: regular file (nlink: %d)\n", torrentPath, stat.Nlink)
 		if stat.Nlink > 1 {
 			torrentInodes = append(torrentInodes, stat.Ino)
 		}
 	} else if isDir(&stat) {
-		vLogf("%s: directory\n", torrentPath)
+		vvLogf("%s: directory\n", torrentPath)
 		torrentInodes = findAllFilesWithHardLinks(torrentPath)
 	} else {
 		return fmt.Errorf("%s: not a regular file or directory", torrentPath)
 	}
+	vLogf("%s: found %d files with hard links\n", torrentPath, len(torrentInodes))
 
 	// exit early if there are no inodes to look for
 	if len(torrentInodes) == 0 {
-		vLogf("no regular files with more than one link")
 		return nil
 	}
 
@@ -77,6 +77,11 @@ func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 				}
 			}
 		}
+		if dryRun {
+			vLogf("%s: found %d linked copies\n", scanPath, len(dups))
+		} else {
+			vLogf("%s: removed %d linked copies\n", scanPath, len(dups))
+		}
 	}
 
 	return lastError
@@ -85,20 +90,24 @@ func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 func findAllFilesWithHardLinks(rootPath string) []uint64 {
 	var inodes []uint64
 
+	// walk the directory tree returning inodes for all regular files with more than one link
 	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
-		vvLogf("walk %s\n", path)
+		vvLogf("visit %s\n", path)
 		base := filepath.Base(path)
 
-		// skip files that can't be accessed
+		// stop walking directories that can't be accessed
+		if err != nil && d.IsDir() {
+			vLogf("skipdir %s: %v\n", base, err)
+			return filepath.SkipDir
+		}
+
+		// ignore files that can't be accessed
 		if err != nil {
-			vLogf("skip %s: %v\n", base, err)
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
+			vLogf("%v\n", err)
 			return nil
 		}
 
-		// skip directories
+		// ignore directories
 		if d.IsDir() {
 			return nil
 		}
@@ -107,18 +116,12 @@ func findAllFilesWithHardLinks(rootPath string) []uint64 {
 		var stat unix.Stat_t
 		err = unix.Lstat(path, &stat)
 		if err != nil {
-			vLogf("skip %s: %v\n", base, err)
+			vLogf("%v\n", err)
 			return nil
 		}
 
-		// skip if not a regular file
-		if !isRegularFile(&stat) {
-			vvLogf("skip %s: not a regular file\n", base)
-			return nil
-		}
-
-		// keep files with more than one link
-		if stat.Nlink > 1 {
+		// keep a regular file with more than one link
+		if isRegularFile(&stat) && stat.Nlink > 1 {
 			vvLogf("match %s: ino=%d nlink=%d\n", base, stat.Ino, stat.Nlink)
 			inodes = append(inodes, stat.Ino)
 		}
@@ -128,23 +131,27 @@ func findAllFilesWithHardLinks(rootPath string) []uint64 {
 	if err != nil {
 		vLogf("%s: error walking directory: %v\n", rootPath, err)
 	}
-	vvLogf("%s: found %d files with hard links\n", rootPath, len(inodes))
+
 	return inodes
 }
 
 func findMatchingFiles(rootPath string, inodes []uint64) []string {
 	var matches []string
 	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
-		vvLogf("walk %s\n", path)
+		vvLogf("visit %s\n", path)
+
+		// stop walking directories that can't be accessed
+		if err != nil && d.IsDir() {
+			vLogf("skipdir %s: %v\n", path, err)
+			return filepath.SkipDir
+		}
+
+		// ignore files that can't be accessed
 		if err != nil {
-			vLogf("%s: skipping: %v\n", path, err)
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
 			return nil
 		}
 
-		// skip directories
+		// ignore directories
 		if d.IsDir() {
 			return nil
 		}
@@ -153,13 +160,13 @@ func findMatchingFiles(rootPath string, inodes []uint64) []string {
 		var stat unix.Stat_t
 		err = unix.Lstat(path, &stat)
 		if err != nil {
-			vLogf("%s: skipping: %v\n", path, err)
+			vLogf("%v\n", err)
 			return nil
 		}
 
-		// check if it's a regular file with a matching inode
+		// keep a regular file with a matching inode
 		if isRegularFile(&stat) && slices.Contains(inodes, stat.Ino) {
-			vvLogf("%s: match (inode: %d)\n", path, stat.Ino)
+			vvLogf("%s: match ino=%d\n", path, stat.Ino)
 			matches = append(matches, path)
 		}
 
@@ -168,6 +175,6 @@ func findMatchingFiles(rootPath string, inodes []uint64) []string {
 	if err != nil {
 		vLogf("%s: error walking directory: %v\n", rootPath, err)
 	}
-	vvLogf("%s: found %d matches\n", rootPath, len(matches))
+
 	return matches
 }
