@@ -29,7 +29,7 @@ func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 
 	// check that there is at least one scan path
 	if len(scanPaths) == 0 {
-		return fmt.Errorf("no --scan-paths specified")
+		return fmt.Errorf("no --scan-path specified")
 	}
 
 	// remember device and inodes for all regular files that have more than one link
