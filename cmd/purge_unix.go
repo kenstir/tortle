@@ -11,12 +11,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func VerbosePrintf(format string, args ...interface{}) {
-	if verbosity > 0 {
-		stderrLogger.Printf(format, args...)
-	}
-}
-
 func isRegularFile(stat *unix.Stat_t) bool {
 	return stat.Mode&unix.S_IFMT == unix.S_IFREG
 }
@@ -42,27 +36,27 @@ func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 	torrentDevice := stat.Dev
 	torrentInodes := []uint64{}
 	if isRegularFile(&stat) {
-		VerbosePrintf("%s: regular file (nlink: %d)\n", torrentPath, stat.Nlink)
+		vLogf("%s: regular file (nlink: %d)\n", torrentPath, stat.Nlink)
 		if stat.Nlink > 1 {
 			torrentInodes = append(torrentInodes, stat.Ino)
 		}
 	} else if isDir(&stat) {
-		VerbosePrintf("%s: directory\n", torrentPath)
-		torrentInodes = findAllFilesWithLinks(torrentPath)
+		vLogf("%s: directory\n", torrentPath)
+		torrentInodes = findAllFilesWithHardLinks(torrentPath)
 	} else {
 		return fmt.Errorf("%s: not a regular file or directory", torrentPath)
 	}
 
 	// exit early if there are no inodes to look for
 	if len(torrentInodes) == 0 {
-		VerbosePrintf("no regular files with more than one link")
+		vLogf("no regular files with more than one link")
 		return nil
 	}
 
 	// scan paths for matching files and remove them
 	var lastError error
 	for _, scanPath := range scanPaths {
-		VerbosePrintf("scanning %s\n", scanPath)
+		vLogf("scanning %s\n", scanPath)
 		err = unix.Lstat(scanPath, &stat)
 		if err != nil {
 			return fmt.Errorf("%s: %v", scanPath, err)
@@ -88,13 +82,20 @@ func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 	return lastError
 }
 
-func findAllFilesWithLinks(rootPath string) []uint64 {
+func findAllFilesWithHardLinks(rootPath string) []uint64 {
 	var inodes []uint64
 
 	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+		vvLogf("walk %s\n", path)
+		base := filepath.Base(path)
+
+		// skip files that can't be accessed
 		if err != nil {
-			VerbosePrintf("%s: skipping: %v\n", path, err)
-			return filepath.SkipDir
+			vLogf("skip %s: %v\n", base, err)
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 
 		// skip directories
@@ -106,30 +107,41 @@ func findAllFilesWithLinks(rootPath string) []uint64 {
 		var stat unix.Stat_t
 		err = unix.Lstat(path, &stat)
 		if err != nil {
-			VerbosePrintf("%s: skipping: %v\n", path, err)
+			vLogf("skip %s: %v\n", base, err)
+			return nil
 		}
 
-		// check if it's a regular file with more than one link
-		if isRegularFile(&stat) && stat.Nlink > 1 {
+		// skip if not a regular file
+		if !isRegularFile(&stat) {
+			vvLogf("skip %s: not a regular file\n", base)
+			return nil
+		}
+
+		// keep files with more than one link
+		if stat.Nlink > 1 {
+			vvLogf("match %s: ino=%d nlink=%d\n", base, stat.Ino, stat.Nlink)
 			inodes = append(inodes, stat.Ino)
-		} else {
-			VerbosePrintf("%s: skipping: no other links\n", path)
 		}
 
 		return nil
 	})
 	if err != nil {
-		VerbosePrintf("%s: error walking directory: %v\n", rootPath, err)
+		vLogf("%s: error walking directory: %v\n", rootPath, err)
 	}
+	vvLogf("%s: found %d files with hard links\n", rootPath, len(inodes))
 	return inodes
 }
 
 func findMatchingFiles(rootPath string, inodes []uint64) []string {
 	var matches []string
 	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+		vvLogf("walk %s\n", path)
 		if err != nil {
-			VerbosePrintf("%s: skipping: %v\n", path, err)
-			return filepath.SkipDir
+			vLogf("%s: skipping: %v\n", path, err)
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 
 		// skip directories
@@ -141,19 +153,21 @@ func findMatchingFiles(rootPath string, inodes []uint64) []string {
 		var stat unix.Stat_t
 		err = unix.Lstat(path, &stat)
 		if err != nil {
-			VerbosePrintf("%s: skipping: %v\n", path, err)
+			vLogf("%s: skipping: %v\n", path, err)
 			return nil
 		}
 
 		// check if it's a regular file with a matching inode
 		if isRegularFile(&stat) && slices.Contains(inodes, stat.Ino) {
+			vvLogf("%s: match (inode: %d)\n", path, stat.Ino)
 			matches = append(matches, path)
 		}
 
 		return nil
 	})
 	if err != nil {
-		VerbosePrintf("%s: error walking directory: %v\n", rootPath, err)
+		vLogf("%s: error walking directory: %v\n", rootPath, err)
 	}
+	vvLogf("%s: found %d matches\n", rootPath, len(matches))
 	return matches
 }
