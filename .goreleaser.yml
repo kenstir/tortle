@@ -33,6 +33,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - deluge_reannounce
 
 release:
   prerelease: auto

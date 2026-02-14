@@ -16,3 +16,7 @@ tt:
 linux:
 	GOOS=linux GOARCH=amd64 go vet -printf ./...
 	GOOS=linux GOARCH=amd64 go build -o $(LINUX_TARGET)
+
+.PHONY: install
+install: linux
+	cp -p $(LINUX_TARGET) deluge_reannounce /t/bin

@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# deluge_reannounce - reannounce until torrent in good health
+#
+#       Execute plugin handler for Torrent Added event
+#
+# usage:
+#       # Deluge Execute plugin passes these arguments, you
+#       # just need to specify the full path to this script.
+#
+#       deluge_reannounce torrent_id torrent_name save_path
+#
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+tt="$dir/tt"
+log="$dir/deluge_reannounce.log"
+"$tt" deluge reannounce "$1" --log-file=$log
