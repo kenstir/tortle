@@ -6,7 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -61,7 +60,7 @@ func delugeReannounceCmdRun(cmd *cobra.Command, args []string) {
 	}
 	err := delugeReannounce(context.Background(), client, hash, options)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		logErrorf("%v\n", err)
 		exitWithFinalizers(0) // for now don't exit non-zero; is this why deluge is not saving a copy of .torrent files?
 	}
 }
@@ -74,9 +73,7 @@ func delugeReannounce(ctx context.Context, client deluge.DelugeClient, hash stri
 		return err
 	}
 	defer client.Close()
-	if verbosity > 0 {
-		stdoutLogger.Printf("Connected to deluge\n")
-	}
+	vLogf("Connected to deluge\n")
 
 	// log something at startup
 	stdoutLogger.Printf("%s: Started\n", hash)
@@ -195,14 +192,14 @@ func delugeCheckStatus(ts *deluge.TorrentStatus) (bool, bool) {
 
 func delugeForceReannounce(ctx context.Context, client deluge.DelugeClient, hash string, prefix string) {
 	if err := client.ForceReannounce(ctx, []string{hash}); err != nil {
-		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
+		logErrorf("%s: Error reannouncing: %s\n", hash, err)
 	} else {
-		stdoutLogger.Printf("%s: %s: reannounce requested\n", hash, prefix)
+		logf("%s: %s: reannounce requested\n", hash, prefix)
 	}
 }
 
 func delugeLogTorrentStatus(ctx context.Context, ts *deluge.TorrentStatus, prefix string) {
 	duration := time.Duration(ts.NextAnnounce) * time.Second
 	progress := int(ts.Progress + 0.5)
-	stdoutLogger.Printf("%s: %s: torrent: status=\"%s\" seeds=%d total_seeds=%d peer=%d progress=%d%% reannounce=%d(%s)\n", ts.Hash, prefix, ts.TrackerStatus, ts.NumSeeds, ts.TotalSeeds, ts.TotalPeers, progress, ts.NextAnnounce, duration.String())
+	logf("%s: %s: torrent: status=\"%s\" seeds=%d total_seeds=%d peer=%d progress=%d%% reannounce=%d(%s)\n", ts.Hash, prefix, ts.TrackerStatus, ts.NumSeeds, ts.TotalSeeds, ts.TotalPeers, progress, ts.NextAnnounce, duration.String())
 }

@@ -32,6 +32,11 @@ func logf(format string, args ...interface{}) {
 	stdoutLogger.Printf(format, args...)
 }
 
+// logErrorf logs a message to the stderrLogger
+func logErrorf(format string, args ...interface{}) {
+	stderrLogger.Printf(format, args...)
+}
+
 // vLogf logs a message if verbosity is greater than 0
 func vLogf(format string, args ...interface{}) {
 	if verbosity > 0 {

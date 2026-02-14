@@ -177,19 +177,19 @@ func qbitReannounceForGoodMeasure(ctx context.Context, client internal.QbitClien
 
 func qbitForceReannounce(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
 	if err := client.ReAnnounceTorrentsCtx(ctx, []string{hash}); err != nil {
-		stdoutLogger.Printf("%s: Error reannouncing: %s\n", hash, err)
+		logErrorf("%s: Error reannouncing: %s\n", hash, err)
 	} else {
-		stdoutLogger.Printf("%s: %s: reannounce requested\n", hash, prefix)
+		logf("%s: %s: reannounce requested\n", hash, prefix)
 	}
 }
 
 func qbitLogTorrentProperties(ctx context.Context, client internal.QbitClientInterface, hash string, prefix string) {
 	props, err := client.GetTorrentPropertiesCtx(ctx, hash)
 	if err != nil {
-		stdoutLogger.Printf("%s: Error getting properties: %s\n", hash, err)
+		logErrorf("%s: Error getting properties: %s\n", hash, err)
 	}
 	duration := time.Duration(props.Reannounce) * time.Second
-	stdoutLogger.Printf("%s: %s: torrent: seed=%d peer=%d pieces=%d/%d(%d%%) reannounce=%d(%s)\n", hash, prefix, props.SeedsTotal, props.PeersTotal, props.PiecesHave, props.PiecesNum, int(100*props.PiecesHave/props.PiecesNum), props.Reannounce, duration.String())
+	logf("%s: %s: torrent: seed=%d peer=%d pieces=%d/%d(%d%%) reannounce=%d(%s)\n", hash, prefix, props.SeedsTotal, props.PeersTotal, props.PiecesHave, props.PiecesNum, int(100*props.PiecesHave/props.PiecesNum), props.Reannounce, duration.String())
 }
 
 // Return true if a tracker is OK
@@ -211,7 +211,7 @@ func findOKTracker(trackers []qbittorrent.TorrentTracker, hash string, prefix st
 			continue
 		}
 		hostname := strings.Split(tr.Url, "/")[2]
-		stdoutLogger.Printf("%s: %s: trackers[%d]: status=%s seed=%d peer=%d msg=\"%s\" u=%s\n", hash, prefix, i, trackerStatus(tr.Status), tr.NumSeeds, tr.NumPeers, tr.Message, hostname)
+		logf("%s: %s: trackers[%d]: status=%s seed=%d peer=%d msg=\"%s\" u=%s\n", hash, prefix, i, trackerStatus(tr.Status), tr.NumSeeds, tr.NumPeers, tr.Message, hostname)
 	}
 
 	// find the first tracker with an OK status and seeds

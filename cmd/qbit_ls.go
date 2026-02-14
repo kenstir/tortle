@@ -114,9 +114,7 @@ func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes [
 			}
 		}
 	}
-	if verbosity > 0 {
-		stderrLogger.Printf("Found %d torrents\n", len(torrents))
-	}
+	vLogf("Found %d torrents\n", len(torrents))
 
 	// print as CSV
 	if !opts.NoHeader {

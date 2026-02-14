@@ -100,9 +100,7 @@ func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string
 		return err
 	}
 	defer client.Close()
-	if verbosity > 0 {
-		stderrLogger.Printf("Connected to deluge\n")
-	}
+	vLogf("Connected to deluge\n")
 
 	// the `ids` argument to TorrentsStatus has to be nil to list all torrents
 	ids := hashes
@@ -124,9 +122,7 @@ func delugeList(ctx context.Context, client deluge.DelugeClient, hashes []string
 			}
 		}
 	}
-	if verbosity > 0 {
-		stderrLogger.Printf("Found %d torrents\n", len(torrentsStatus))
-	}
+	vLogf("Found %d torrents\n", len(torrentsStatus))
 
 	// sort torrentsStatus by name
 	keys := make([]string, 0, len(torrentsStatus))

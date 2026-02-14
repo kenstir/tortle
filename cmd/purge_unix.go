@@ -68,12 +68,12 @@ func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 		dups := findMatchingFiles(scanPath, torrentInodes)
 		for _, dup := range dups {
 			if dryRun || verbosity > 0 {
-				stderrLogger.Printf("unlink %s\n", dup)
+				logf("unlink %s\n", dup)
 			}
 			if !dryRun {
 				err = unix.Unlink(dup)
 				if err != nil {
-					stderrLogger.Printf("%s: error unlinking: %v\n", dup, err)
+					logErrorf("%s: error unlinking: %v\n", dup, err)
 					lastError = err
 				}
 			}

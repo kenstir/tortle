@@ -109,6 +109,7 @@ func initLogging() {
 			os.Exit(1)
 		}
 		stdoutLogger.SetOutput(logFile)
+		stderrLogger.SetOutput(logFile)
 	}
 }
 

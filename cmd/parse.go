@@ -27,7 +27,7 @@ func parseCmdRun(cmd *cobra.Command, args []string) {
 		r := rls.ParseString(name)
 		jsonOutput, err := json.MarshalIndent(r, "", "  ")
 		if err != nil {
-			fmt.Printf("Error converting to JSON: %v\n", err)
+			logErrorf("Error converting to JSON: %v\n", err)
 			continue
 		}
 		fmt.Println(string(jsonOutput))

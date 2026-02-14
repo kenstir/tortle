@@ -3,6 +3,7 @@
 /*.toml
 /tt
 /dist/
+/local.mk
 
 # junk
 /*.log
