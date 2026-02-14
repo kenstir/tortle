@@ -27,17 +27,22 @@ func printMeasurement(measurement string, tags []string, fields []string) {
 	)
 }
 
+// logf logs a message to the stdoutLogger
+func logf(format string, args ...interface{}) {
+	stdoutLogger.Printf(format, args...)
+}
+
 // vLogf logs a message if verbosity is greater than 0
 func vLogf(format string, args ...interface{}) {
 	if verbosity > 0 {
-		stderrLogger.Printf(format, args...)
+		stdoutLogger.Printf(format, args...)
 	}
 }
 
 // vvLogf logs a message if verbosity is greater than 1
 func vvLogf(format string, args ...interface{}) {
 	if verbosity > 1 {
-		stderrLogger.Printf(format, args...)
+		stdoutLogger.Printf(format, args...)
 	}
 }
 

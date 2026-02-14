@@ -33,6 +33,7 @@ func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 	}
 
 	// remember device and inodes for all regular files that have more than one link
+	base := filepath.Base(torrentPath)
 	torrentDevice := stat.Dev
 	torrentInodes := []uint64{}
 	if isRegularFile(&stat) {
@@ -78,9 +79,9 @@ func purgeCopies(torrentPath string, scanPaths []string, dryRun bool) error {
 			}
 		}
 		if dryRun {
-			vLogf("%s: found %d linked copies\n", scanPath, len(dups))
-		} else {
-			vLogf("%s: removed %d linked copies\n", scanPath, len(dups))
+			vLogf("%s: found %d linked copies in %s\n", base, len(dups), scanPath)
+		} else if len(dups) > 0 {
+			logf("%s: removed %d linked copies in %s\n", base, len(dups), scanPath)
 		}
 	}
 
