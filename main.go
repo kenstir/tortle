@@ -9,7 +9,7 @@ import (
 	"github.com/kenstir/tortle/cmd"
 )
 
-// These variables are set at release time by goreleaser using -ldflags.
+// If built by goreleaser, these variables are set by goreleaser using -ldflags.
 var (
 	version = "dev"
 	commit  = "unknown"
@@ -18,30 +18,43 @@ var (
 )
 
 func main() {
-	overrideVersionInfo()
+	readBuildInfo()
 	cmd.Execute(version, commit, date)
 }
 
-func overrideVersionInfo() {
-	if builtBy == "goreleaser" {
-		// everything is set by goreleaser, skip
-		return
+func safeSubstr(str string, length int) string {
+	if len(str) >= length {
+		return str[:length]
+	} else {
+		return str
 	}
-	info, ok := debug.ReadBuildInfo()
-	if ok {
-		vcsRevision := "unknown"
+}
+
+func readBuildInfo() {
+	if builtBy == "goreleaser" {
+		commit = safeSubstr(commit, 8)
+		date = safeSubstr(date, 10)
+		return
+	} else {
+		info, ok := debug.ReadBuildInfo()
+		if !ok {
+			commit = "unknown"
+			return
+		}
+
 		vcsModified := false
 		for _, setting := range info.Settings {
-			if setting.Key == "vcs.revision" {
-				vcsRevision = setting.Value
-			} else if setting.Key == "vcs.modified" {
+			switch setting.Key {
+			case "vcs.revision":
+				commit = safeSubstr(setting.Value, 8)
+			case "vcs.time":
+				date = safeSubstr(setting.Value, 10)
+			case "vcs.modified":
 				vcsModified = setting.Value == "true"
 			}
 		}
 		if vcsModified {
-			commit = "locally modified"
-		} else {
-			commit = vcsRevision
+			commit = "locally_modified"
 		}
 	}
 }
