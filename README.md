@@ -18,6 +18,10 @@ These instructions can be followed exactly if you are running qBittorrent in Doc
    ```
    /config/tt qbit reannounce "%I"
    ```
+   If you want to see the output of the reannounce process, log it to a file:
+   ```
+   /config/tt qbit reannounce "%I" --log-file /config/qbit_reannounce.log
+   ```
 
 ## What can you do with it?
 
