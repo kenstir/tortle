@@ -117,9 +117,7 @@ func finalizeLogging() {
 	//fmt.Println("root finalizeLogging")
 
 	if logFile != nil {
-		if logFile != nil {
-			logFile.Close()
-		}
+		logFile.Close()
 	}
 }
 
@@ -131,6 +129,6 @@ func exitWithFinalizers(code int) {
 
 // fatalError closes the log file, prints the error message to stderr, and exits 1
 func fatalError(err error) {
-	fmt.Fprintf(os.Stderr, "%v\n", err)
+	stderrLogger.Printf("%v\n", err)
 	exitWithFinalizers(1)
 }
