@@ -12,16 +12,29 @@ func init() {
 	rootCmd.AddCommand(purgeCmd)
 
 	purgeCmd.Flags().BoolP("dry-run", "n", false, "Run without removing anything")
-	purgeCmd.Flags().StringSliceP("scan-path", "p", []string{}, "Scan path to look for torrent files")
+	purgeCmd.Flags().StringSliceP("scan-path", "p", []string{}, "Paths to look for hard-linked copies of the files in TORRENT_PATH")
 	viper.BindPFlag("purge.dry-run", purgeCmd.Flags().Lookup("dry-run"))
 	viper.BindPFlag("purge.scan-path", purgeCmd.Flags().Lookup("scan-path"))
 }
 
 var purgeCmd = &cobra.Command{
-	Use:   "purge torrent_path",
-	Short: "purge hard-linked copies of all torrent files in the given scan paths",
-	Args:  cobra.MinimumNArgs(1),
-	Run:   purgeCmdRun,
+	Use:   "purge TORRENT_PATH",
+	Short: "purge hard-linked copies of files in TORRENT_PATH",
+	Long: `Scan every directory in SCAN-PATH and remove any files which are hard-linked to files in TORRENT_PATH.
+
+purge is intended to be used as an external program, removing hard-linked copies of files
+created by Sonarr when the torrent is removed.  Specify the Sonarr root folder in the tt.toml
+file, e.g.
+
+  [purge]
+  scan-path = ["/mnt/sonarr-root-folder"]
+
+Then run an automation at the time a torrent is removed, e.g.
+
+  tt purge TORRENT_PATH
+`,
+	Args: cobra.MinimumNArgs(1),
+	Run:  purgeCmdRun,
 }
 
 func purgeCmdRun(cmd *cobra.Command, args []string) {
