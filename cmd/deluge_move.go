@@ -17,7 +17,6 @@ func init() {
 	delugeCmd.AddCommand(delugeMoveCmd)
 
 	delugeMoveCmd.Flags().BoolP("force", "f", false, "Force move")
-	viper.BindPFlag("deluge.move.force", delugeMoveCmd.Flags().Lookup("force"))
 }
 
 var delugeMoveCmd = &cobra.Command{
@@ -25,7 +24,12 @@ var delugeMoveCmd = &cobra.Command{
 	Aliases: []string{"mv", "m"},
 	Short:   "Move torrent",
 	Args:    cobra.ExactArgs(2),
+	PreRun:  delugeMoveCmdInit,
 	Run:     delugeMoveCmdRun,
+}
+
+func delugeMoveCmdInit(cmd *cobra.Command, args []string) {
+	viper.BindPFlag(delugeKey("move.force"), cmd.Flags().Lookup("force"))
 }
 
 func delugeMoveCmdRun(cmd *cobra.Command, args []string) {
@@ -33,7 +37,7 @@ func delugeMoveCmdRun(cmd *cobra.Command, args []string) {
 	path := args[1]
 
 	// get the flags
-	force := viper.GetBool("deluge.move.force")
+	force := viper.GetBool(delugeKey("move.force"))
 
 	// OMG, msys does path conversion, turning "/a" into "c:/Program Files/Git/a".
 	// Do not allow this.

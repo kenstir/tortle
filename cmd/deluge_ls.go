@@ -32,10 +32,6 @@ func init() {
 	delugeListCmd.Flags().StringP("filter", "f", "", "Filter torrents by name")
 	delugeListCmd.Flags().Bool("humanize", true, "Humanize sizes, e.g. \"2.1 GiB\"")
 	delugeListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
-	viper.BindPFlag("deluge.columns", delugeListCmd.Flags().Lookup("columns"))
-	viper.BindPFlag("deluge.filter", delugeListCmd.Flags().Lookup("filter"))
-	viper.BindPFlag("deluge.humanize", delugeListCmd.Flags().Lookup("humanize"))
-	viper.BindPFlag("deluge.noheader", delugeListCmd.Flags().Lookup("noheader"))
 }
 
 var delugeValidColumns = []string{
@@ -59,9 +55,17 @@ var delugeValidColumns = []string{
 }
 
 var delugeListCmd = &cobra.Command{
-	Use:   "ls [hash]...",
-	Short: "List torrents",
-	Run:   delugeListCmdRun,
+	Use:    "ls [hash]...",
+	Short:  "List torrents",
+	PreRun: delugeListCmdInit,
+	Run:    delugeListCmdRun,
+}
+
+func delugeListCmdInit(cmd *cobra.Command, args []string) {
+	viper.BindPFlag(delugeKey("columns"), cmd.Flags().Lookup("columns"))
+	viper.BindPFlag(delugeKey("filter"), cmd.Flags().Lookup("filter"))
+	viper.BindPFlag(delugeKey("humanize"), cmd.Flags().Lookup("humanize"))
+	viper.BindPFlag(delugeKey("noheader"), cmd.Flags().Lookup("noheader"))
 }
 
 func delugeListCmdRun(cmd *cobra.Command, args []string) {
@@ -70,7 +74,7 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 	hashes = append(hashes, args...)
 
 	// check flags
-	columns := viper.GetStringSlice("deluge.columns")
+	columns := viper.GetStringSlice(delugeKey("columns"))
 	for _, column := range columns {
 		if !slices.Contains(delugeValidColumns, column) {
 			fatalError(fmt.Errorf("unknown column: %s (expected one of {%s})", column, strings.Join(delugeValidColumns, ", ")))
@@ -83,9 +87,9 @@ func delugeListCmdRun(cmd *cobra.Command, args []string) {
 	// collect options and go
 	opts := ListOptions{
 		Columns:  columns,
-		Filter:   viper.GetString("deluge.filter"),
-		NoHeader: viper.GetBool("deluge.noheader"),
-		Humanize: viper.GetBool("deluge.humanize"),
+		Filter:   viper.GetString(delugeKey("filter")),
+		NoHeader: viper.GetBool(delugeKey("noheader")),
+		Humanize: viper.GetBool(delugeKey("humanize")),
 	}
 	err := delugeList(context.Background(), client, hashes, opts)
 	if err != nil {

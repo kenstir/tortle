@@ -94,3 +94,7 @@ func key(name string, defaultGroup string) string {
 func qbitKey(name string) string {
 	return key(name, "qbit")
 }
+
+func delugeKey(name string) string {
+	return key(name, "deluge")
+}
