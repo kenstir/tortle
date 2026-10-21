@@ -32,11 +32,6 @@ func init() {
 	qbitReannounceCmd.Flags().IntP("extra_attempts", "A", 2, "Number of extra reannounce attempts")
 	qbitReannounceCmd.Flags().IntP("extra_interval", "I", 30, "Interval between extra reannounce attempts")
 	qbitReannounceCmd.Flags().IntP("max_age", "m", 60*60, "Maximum age of torrent in seconds")
-	viper.BindPFlag("qbit.reannounce.attempts", qbitReannounceCmd.Flags().Lookup("attempts"))
-	viper.BindPFlag("qbit.reannounce.interval", qbitReannounceCmd.Flags().Lookup("interval"))
-	viper.BindPFlag("qbit.reannounce.extra_attempts", qbitReannounceCmd.Flags().Lookup("extra_attempts"))
-	viper.BindPFlag("qbit.reannounce.extra_interval", qbitReannounceCmd.Flags().Lookup("extra_interval"))
-	viper.BindPFlag("qbit.reannounce.max_age", qbitReannounceCmd.Flags().Lookup("max_age"))
 }
 
 var qbitReannounceCmd = &cobra.Command{
@@ -44,17 +39,26 @@ var qbitReannounceCmd = &cobra.Command{
 	Aliases: []string{"re", "reann", "faststart", "start"},
 	Short:   "Reannounce torrent until healthy",
 	Args:    cobra.ExactArgs(1),
+	PreRun:  qbitReannounceCmdInit,
 	Run:     qbitReannounceCmdRun,
+}
+
+func qbitReannounceCmdInit(cmd *cobra.Command, args []string) {
+	viper.BindPFlag(qbitKey("reannounce.attempts"), cmd.Flags().Lookup("attempts"))
+	viper.BindPFlag(qbitKey("reannounce.interval"), cmd.Flags().Lookup("interval"))
+	viper.BindPFlag(qbitKey("reannounce.extra_attempts"), cmd.Flags().Lookup("extra_attempts"))
+	viper.BindPFlag(qbitKey("reannounce.extra_interval"), cmd.Flags().Lookup("extra_interval"))
+	viper.BindPFlag(qbitKey("reannounce.max_age"), cmd.Flags().Lookup("max_age"))
 }
 
 func qbitReannounceCmdRun(cmd *cobra.Command, args []string) {
 	// get the flags
 	hash := args[0]
-	attempts := viper.GetInt("qbit.reannounce.attempts")
-	interval := viper.GetInt("qbit.reannounce.interval")
-	extraAttempts := viper.GetInt("qbit.reannounce.extra_attempts")
-	extraInterval := viper.GetInt("qbit.reannounce.extra_interval")
-	maxAge := viper.GetInt("qbit.reannounce.max_age")
+	attempts := viper.GetInt(qbitKey("reannounce.attempts"))
+	interval := viper.GetInt(qbitKey("reannounce.interval"))
+	extraAttempts := viper.GetInt(qbitKey("reannounce.extra_attempts"))
+	extraInterval := viper.GetInt(qbitKey("reannounce.extra_interval"))
+	maxAge := viper.GetInt(qbitKey("reannounce.max_age"))
 
 	// create a qbit client
 	client := qbitCreateClient()

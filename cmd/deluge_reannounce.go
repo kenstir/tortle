@@ -22,30 +22,34 @@ func init() {
 	delugeReannounceCmd.Flags().IntP("extra_attempts", "A", 2, "Number of extra reannounce attempts")
 	delugeReannounceCmd.Flags().IntP("extra_interval", "I", 30, "Interval between extra reannounce attempts")
 	delugeReannounceCmd.Flags().IntP("max_age", "m", 60*60, "Maximum age of torrent in seconds")
-	viper.BindPFlag("deluge.reannounce.attempts", delugeReannounceCmd.Flags().Lookup("attempts"))
-	viper.BindPFlag("deluge.reannounce.interval", delugeReannounceCmd.Flags().Lookup("interval"))
-	viper.BindPFlag("deluge.reannounce.extra_attempts", delugeReannounceCmd.Flags().Lookup("extra_attempts"))
-	viper.BindPFlag("deluge.reannounce.extra_interval", delugeReannounceCmd.Flags().Lookup("extra_interval"))
-	viper.BindPFlag("deluge.reannounce.max_age", delugeReannounceCmd.Flags().Lookup("max_age"))
 }
 
 var delugeReannounceCmd = &cobra.Command{
 	Use:     "reannounce hash",
 	Aliases: []string{"re", "reann", "faststart", "start"},
 	Short:   "Reannounce torrent until healthy",
+	PreRun:  delugeReannounceCmdInit,
 	Args:    cobra.ExactArgs(1),
 	Run:     delugeReannounceCmdRun,
+}
+
+func delugeReannounceCmdInit(cmd *cobra.Command, args []string) {
+	viper.BindPFlag(delugeKey("reannounce.attempts"), cmd.Flags().Lookup("attempts"))
+	viper.BindPFlag(delugeKey("reannounce.interval"), cmd.Flags().Lookup("interval"))
+	viper.BindPFlag(delugeKey("reannounce.extra_attempts"), cmd.Flags().Lookup("extra_attempts"))
+	viper.BindPFlag(delugeKey("reannounce.extra_interval"), cmd.Flags().Lookup("extra_interval"))
+	viper.BindPFlag(delugeKey("reannounce.max_age"), cmd.Flags().Lookup("max_age"))
 }
 
 func delugeReannounceCmdRun(cmd *cobra.Command, args []string) {
 	hash := args[0]
 
 	// get the flags
-	attempts := viper.GetInt("deluge.reannounce.attempts")
-	interval := viper.GetInt("deluge.reannounce.interval")
-	extraAttempts := viper.GetInt("deluge.reannounce.extra_attempts")
-	extraInterval := viper.GetInt("deluge.reannounce.extra_interval")
-	maxAge := viper.GetInt("deluge.reannounce.max_age")
+	attempts := viper.GetInt(delugeKey("reannounce.attempts"))
+	interval := viper.GetInt(delugeKey("reannounce.interval"))
+	extraAttempts := viper.GetInt(delugeKey("reannounce.extra_attempts"))
+	extraInterval := viper.GetInt(delugeKey("reannounce.extra_interval"))
+	maxAge := viper.GetInt(delugeKey("reannounce.max_age"))
 
 	// create a deluge client
 	client := delugeCreateV2Client()

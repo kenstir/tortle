@@ -16,29 +16,33 @@ func init() {
 	delugeCmd.PersistentFlags().IntP("port", "p", 9091, "server port")
 	delugeCmd.PersistentFlags().StringP("username", "U", "admin", "server username")
 	delugeCmd.PersistentFlags().StringP("password", "P", "password", "server password")
-	viper.BindPFlag("deluge.server", delugeCmd.PersistentFlags().Lookup("server"))
-	viper.BindPFlag("deluge.port", delugeCmd.PersistentFlags().Lookup("port"))
-	viper.BindPFlag("deluge.username", delugeCmd.PersistentFlags().Lookup("username"))
-	viper.BindPFlag("deluge.password", delugeCmd.PersistentFlags().Lookup("password"))
 }
 
 var delugeCmd = &cobra.Command{
-	Use:     "deluge",
-	Aliases: []string{"d"},
-	Short:   "Manage a deluge server",
+	Use:              "deluge",
+	Aliases:          []string{"d"},
+	Short:            "Manage a deluge server",
+	PersistentPreRun: delugeCmdInit,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
 }
 
+func delugeCmdInit(cmd *cobra.Command, args []string) {
+	viper.BindPFlag(delugeKey("server"), cmd.InheritedFlags().Lookup("server"))
+	viper.BindPFlag(delugeKey("port"), cmd.InheritedFlags().Lookup("port"))
+	viper.BindPFlag(delugeKey("username"), cmd.InheritedFlags().Lookup("username"))
+	viper.BindPFlag(delugeKey("password"), cmd.InheritedFlags().Lookup("password"))
+}
+
 func delugeCreateV2Client() *deluge.ClientV2 {
 	if viper.GetInt("verbose") > 0 {
-		stdoutLogger.Printf("Connecting to %s:%d as user %s\n", viper.GetString("deluge.server"), viper.GetInt("deluge.port"), viper.GetString("deluge.username"))
+		stdoutLogger.Printf("Connecting to %s:%d as user %s\n", viper.GetString(delugeKey("server")), viper.GetInt(delugeKey("port")), viper.GetString(delugeKey("username")))
 	}
 	return deluge.NewV2(deluge.Settings{
-		Hostname: viper.GetString("deluge.server"),
-		Port:     uint(viper.GetInt("deluge.port")),
-		Login:    viper.GetString("deluge.username"),
-		Password: viper.GetString("deluge.password"),
+		Hostname: viper.GetString(delugeKey("server")),
+		Port:     uint(viper.GetInt(delugeKey("port"))),
+		Login:    viper.GetString(delugeKey("username")),
+		Password: viper.GetString(delugeKey("password")),
 	})
 }

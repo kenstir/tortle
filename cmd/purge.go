@@ -23,7 +23,7 @@ var purgeCmd = &cobra.Command{
 	Long: `Scan every directory in SCAN-PATH and remove any files which are hard-linked to files in TORRENT_PATH.
 
 purge is intended to be used as an external program, removing hard-linked copies of files
-created by Sonarr when the original torrent is removed.  Specify the Sonarr root folder
+created by Sonarr before the original torrent is removed.  Specify the Sonarr root folder
 in the tt.toml file, e.g.
 
   [purge]
