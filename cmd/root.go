@@ -14,7 +14,6 @@ import (
 )
 
 var cfgFile string
-var cfgGroup string
 var logFile io.WriteCloser
 var verbosity int
 
