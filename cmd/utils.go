@@ -81,11 +81,12 @@ func humanizeBytes(bytes int64) string {
 	}
 }
 
-// / key returns the full key for a configuration value in the format "cfgGroup.name"
-func key(name string, defaultInstance string) string {
+// key returns the full key for a configuration value in the format "group.name"
+// so it can be overridden with the flag --group
+func key(name string, defaultGroup string) string {
 	group := viper.GetString("group")
 	if group == "" {
-		group = defaultInstance
+		group = defaultGroup
 	}
 	return fmt.Sprintf("%s.%s", group, name)
 }
