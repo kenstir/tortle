@@ -14,6 +14,7 @@ import (
 )
 
 var cfgFile string
+var cfgGroup string
 var logFile io.WriteCloser
 var verbosity int
 
@@ -28,7 +29,7 @@ var versionInfo VersionInfo
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "tt",
-	Short: "tt (torrent tool or tortle) is a multi-tool for Deluge and qBittorrent",
+	Short: "tt (torrent tool or tortle) is a multi-tool for qBittorrent and Deluge",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -51,9 +52,11 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./tt.toml)")
 
+	rootCmd.PersistentFlags().StringP("group", "G", "", "name of group in config file if you have more than one server (defaults to [qbit] or [deluge])")
 	rootCmd.PersistentFlags().StringP("log-file", "l", "", "Log file (default is stdout)")
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Suppress all output except errors")
 	rootCmd.PersistentFlags().CountVarP(&verbosity, "verbose", "v", "Increase verbosity (may be specified multiple times)")
+	viper.BindPFlag("group", rootCmd.PersistentFlags().Lookup("group"))
 	viper.BindPFlag("log-file", rootCmd.PersistentFlags().Lookup("log-file"))
 	viper.BindPFlag("quiet", rootCmd.PersistentFlags().Lookup("quiet"))
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))

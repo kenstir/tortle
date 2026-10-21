@@ -26,11 +26,6 @@ func init() {
 	qbitListCmd.Flags().StringP("tag", "t", "", "Filter torrents by tag")
 	qbitListCmd.Flags().Bool("humanize", true, "Humanize sizes, e.g. \"2.1 GiB\"")
 	qbitListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
-	viper.BindPFlag("qbit.columns", qbitListCmd.Flags().Lookup("columns"))
-	viper.BindPFlag("qbit.filter", qbitListCmd.Flags().Lookup("filter"))
-	viper.BindPFlag("qbit.tag", qbitListCmd.Flags().Lookup("tag"))
-	viper.BindPFlag("qbit.humanize", qbitListCmd.Flags().Lookup("humanize"))
-	viper.BindPFlag("qbit.noheader", qbitListCmd.Flags().Lookup("noheader"))
 }
 
 var qbitValidColumns = []string{
@@ -54,9 +49,18 @@ var qbitValidColumns = []string{
 }
 
 var qbitListCmd = &cobra.Command{
-	Use:   "ls [hash]...",
-	Short: "List torrents",
-	Run:   qbitListCmdRun,
+	Use:    "ls [hash]...",
+	Short:  "List torrents",
+	PreRun: qbitListCmdInit,
+	Run:    qbitListCmdRun,
+}
+
+func qbitListCmdInit(cmd *cobra.Command, args []string) {
+	viper.BindPFlag(qbitKey("columns"), cmd.Flags().Lookup("columns"))
+	viper.BindPFlag(qbitKey("filter"), cmd.Flags().Lookup("filter"))
+	viper.BindPFlag(qbitKey("tag"), cmd.Flags().Lookup("tag"))
+	viper.BindPFlag(qbitKey("humanize"), cmd.Flags().Lookup("humanize"))
+	viper.BindPFlag(qbitKey("noheader"), cmd.Flags().Lookup("noheader"))
 }
 
 func qbitListCmdRun(cmd *cobra.Command, args []string) {
@@ -65,7 +69,7 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 	hashes = append(hashes, args...)
 
 	// check flags
-	columns := viper.GetStringSlice("qbit.columns")
+	columns := viper.GetStringSlice(qbitKey("columns"))
 	for _, column := range columns {
 		if !slices.Contains(qbitValidColumns, column) {
 			fatalError(fmt.Errorf("unknown column: %s (expected one of {%s})", column, strings.Join(qbitValidColumns, ", ")))
@@ -78,10 +82,10 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 	// collect options and go
 	opts := ListOptions{
 		Columns:  columns,
-		Filter:   viper.GetString("qbit.filter"),
-		Tag:      viper.GetString("qbit.tag"),
-		NoHeader: viper.GetBool("qbit.noheader"),
-		Humanize: viper.GetBool("qbit.humanize"),
+		Filter:   viper.GetString(qbitKey("filter")),
+		Tag:      viper.GetString(qbitKey("tag")),
+		NoHeader: viper.GetBool(qbitKey("noheader")),
+		Humanize: viper.GetBool(qbitKey("humanize")),
 	}
 	err := qbitList(context.Background(), client, hashes, opts)
 	if err != nil {

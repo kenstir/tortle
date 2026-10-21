@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 // convert a unix timestamp to a string for output
@@ -77,4 +79,17 @@ func humanizeBytes(bytes int64) string {
 	default:
 		return fmt.Sprintf("%d B", bytes)
 	}
+}
+
+// / key returns the full key for a configuration value in the format "cfgGroup.name"
+func key(name string, defaultInstance string) string {
+	group := viper.GetString("group")
+	if group == "" {
+		group = defaultInstance
+	}
+	return fmt.Sprintf("%s.%s", group, name)
+}
+
+func qbitKey(name string) string {
+	return key(name, "qbit")
 }
