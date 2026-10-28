@@ -16,7 +16,7 @@ import (
 func init() {
 	rootCmd.AddCommand(qbitCmd)
 
-	qbitCmd.PersistentFlags().StringP("server", "s", "http://localhost:8080", "server url")
+	qbitCmd.PersistentFlags().StringP("server", "S", "http://localhost:8080", "server url")
 	qbitCmd.PersistentFlags().StringP("username", "U", "admin", "server username")
 	qbitCmd.PersistentFlags().StringP("password", "P", "password", "server password")
 }

@@ -20,6 +20,7 @@ import (
 type ListOptions struct {
 	Columns  []string
 	Filter   string
+	Sort     string // qbit only
 	Tag      string // qbit only
 	NoHeader bool
 	Humanize bool

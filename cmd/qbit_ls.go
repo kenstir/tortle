@@ -24,15 +24,19 @@ func init() {
 	qbitListCmd.Flags().StringSliceP("columns", "c", []string{"ratio", "name"}, "Columns to display")
 	qbitListCmd.Flags().StringP("filter", "f", "", "Filter torrents by name")
 	qbitListCmd.Flags().StringP("tag", "t", "", "Filter torrents by tag")
+	qbitListCmd.Flags().BoolP("reverse", "r", false, "Reverse the sort order")
+	qbitListCmd.Flags().StringP("sort", "s", "name", "Sort torrents by column")
 	qbitListCmd.Flags().Bool("humanize", true, "Humanize sizes, e.g. \"2.1 GiB\"")
 	qbitListCmd.Flags().BoolP("noheader", "n", false, "Don't print the header line")
 }
 
 var qbitValidColumns = []string{
 	"added",
+	"added_on",
 	"audio",
 	"channels",
 	"completed",
+	"completion_on",
 	"download_path",
 	"downloaded",
 	"group",
@@ -48,6 +52,21 @@ var qbitValidColumns = []string{
 	"uploaded",
 }
 
+var qbitValidSorts = []string{
+	"added_on",
+	"completion_on",
+	"download_path",
+	"downloaded",
+	"hash",
+	"name",
+	"ratio",
+	"save_path",
+	"seeding_time",
+	"state",
+	"tags",
+	"uploaded",
+}
+
 var qbitListCmd = &cobra.Command{
 	Use:    "ls [hash]...",
 	Short:  "List torrents",
@@ -58,6 +77,8 @@ var qbitListCmd = &cobra.Command{
 func qbitListCmdInit(cmd *cobra.Command, args []string) {
 	viper.BindPFlag(qbitKey("columns"), cmd.Flags().Lookup("columns"))
 	viper.BindPFlag(qbitKey("filter"), cmd.Flags().Lookup("filter"))
+	viper.BindPFlag(qbitKey("sort"), cmd.Flags().Lookup("sort"))
+	viper.BindPFlag(qbitKey("reverse"), cmd.Flags().Lookup("reverse"))
 	viper.BindPFlag(qbitKey("tag"), cmd.Flags().Lookup("tag"))
 	viper.BindPFlag(qbitKey("humanize"), cmd.Flags().Lookup("humanize"))
 	viper.BindPFlag(qbitKey("noheader"), cmd.Flags().Lookup("noheader"))
@@ -75,6 +96,10 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 			fatalError(fmt.Errorf("unknown column: %s (expected one of {%s})", column, strings.Join(qbitValidColumns, ", ")))
 		}
 	}
+	sort := viper.GetString(qbitKey("sort"))
+	if !slices.Contains(qbitValidSorts, sort) {
+		fatalError(fmt.Errorf("unknown sort column: %s (expected one of {%s})", sort, strings.Join(qbitValidSorts, ", ")))
+	}
 
 	// create a qbit client
 	client := qbitCreateClient()
@@ -83,6 +108,7 @@ func qbitListCmdRun(cmd *cobra.Command, args []string) {
 	opts := ListOptions{
 		Columns:  columns,
 		Filter:   viper.GetString(qbitKey("filter")),
+		Sort:     viper.GetString(qbitKey("sort")),
 		Tag:      viper.GetString(qbitKey("tag")),
 		NoHeader: viper.GetBool(qbitKey("noheader")),
 		Humanize: viper.GetBool(qbitKey("humanize")),
@@ -102,9 +128,10 @@ func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes [
 
 	// get torrents
 	torrents, err := client.GetTorrentsCtx(ctx, qbittorrent.TorrentFilterOptions{
-		Sort:   "name",
-		Hashes: hashes,
-		Tag:    opts.Tag,
+		Hashes:  hashes,
+		Sort:    opts.Sort,
+		Reverse: viper.GetBool(qbitKey("reverse")),
+		Tag:     opts.Tag,
 	})
 	if err != nil {
 		return err
@@ -145,13 +172,13 @@ func qbitList(ctx context.Context, client internal.QbitClientInterface, hashes [
 // format the given column
 func qbitFormatColumn(column string, t qbittorrent.Torrent, r rls.Release, humanize bool) string {
 	switch column {
-	case "added":
+	case "added", "added_on":
 		return formatTimestamp(int64(t.AddedOn))
 	case "audio":
 		return strings.Join(r.Audio, " ")
 	case "channels":
 		return r.Channels
-	case "completed":
+	case "completed", "completion_on":
 		return formatTimestamp(t.CompletionOn)
 	case "download_path":
 		return t.DownloadPath
